@@ -76,6 +76,9 @@ const styles = {
 };
 
 const STORAGE_AUTH_TOKEN_KEY = "kunst-app.auth.token.v1";
+const STORAGE_FEED_SEARCH_KEY = "kunst-app.feed.search.v1";
+const STORAGE_FEED_MODE_KEY = "kunst-app.feed.mode.v1";
+const STORAGE_FEED_SORT_KEY = "kunst-app.feed.sort.v1";
 const API_BASE_URL = process.env.REACT_APP_API_URL || "";
 const EMPTY_COMMENTS = [];
 const MARK_ALL_UNDO_WINDOW_MS = 5000;
@@ -557,6 +560,7 @@ function FeedToolbar({
   setFeedMode,
   sortOrder,
   setSortOrder,
+  onResetFilters,
   onRefresh,
   isRefreshing,
   lastUpdatedAt,
@@ -626,6 +630,9 @@ function FeedToolbar({
           style={controlButtonStyle(true)}
         >
           Sortierung: {sortOrder === "newest" ? "Neueste zuerst" : "Aelteste zuerst"}
+        </button>
+        <button type="button" onClick={onResetFilters} style={controlButtonStyle(false)}>
+          Filter zuruecksetzen
         </button>
       </div>
     </section>
@@ -1783,9 +1790,16 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const [commentInputByPostId, setCommentInputByPostId] = useState({});
   const [expandedCommentsPostId, setExpandedCommentsPostId] = useState(null);
   const [highlightedPostId, setHighlightedPostId] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [feedMode, setFeedMode] = useState("all");
-  const [sortOrder, setSortOrder] = useState("newest");
+  const [searchQuery, setSearchQuery] = useState(() => readStorage(STORAGE_FEED_SEARCH_KEY, ""));
+  const [feedMode, setFeedMode] = useState(() => {
+    const savedMode = readStorage(STORAGE_FEED_MODE_KEY, "all");
+    return savedMode === "liked" ? "liked" : "all";
+  });
+  const [sortOrder, setSortOrder] = useState(() => {
+    const savedSort = readStorage(STORAGE_FEED_SORT_KEY, "newest");
+    return savedSort === "oldest" ? "oldest" : "newest";
+  });
+  const [lastFeedLoadedAt, setLastFeedLoadedAt] = useState(null);
   const [feedErrorText, setFeedErrorText] = useState("");
   const [isFeedLoading, setIsFeedLoading] = useState(true);
   const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -1796,6 +1810,18 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const commentErrorByPostIdRef = useRef(commentErrorByPostId);
   const pendingMarkAllUndoRef = useRef(null);
   const pendingMarkAllTimerRef = useRef(null);
+
+  useEffect(() => {
+    writeStorage(STORAGE_FEED_SEARCH_KEY, searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    writeStorage(STORAGE_FEED_MODE_KEY, feedMode);
+  }, [feedMode]);
+
+  useEffect(() => {
+    writeStorage(STORAGE_FEED_SORT_KEY, sortOrder);
+  }, [sortOrder]);
 
   useEffect(() => {
     likesRef.current = likes;
@@ -1836,6 +1862,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
       const nextLikes = feedResponse.likes || {};
       setLikes(nextLikes);
       likesRef.current = nextLikes;
+      setLastFeedLoadedAt(Date.now());
     } catch (error) {
       setFeedErrorText(error.message || "Feed konnte nicht geladen werden.");
       setPosts([]);
@@ -2202,6 +2229,12 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     [submitComment],
   );
 
+  const handleResetFilters = useCallback(() => {
+    setSearchQuery("");
+    setFeedMode("all");
+    setSortOrder("newest");
+  }, []);
+
   useEffect(() => {
     if (current !== "feed" || highlightedPostId === null) {
       return undefined;
@@ -2236,6 +2269,10 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
             setFeedMode={setFeedMode}
             sortOrder={sortOrder}
             setSortOrder={setSortOrder}
+            onRefresh={loadFeed}
+            isRefreshing={isFeedLoading}
+            lastUpdatedAt={lastFeedLoadedAt}
+            onResetFilters={handleResetFilters}
           />
 
           {feedErrorText && (

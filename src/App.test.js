@@ -671,3 +671,36 @@ test("supports keyboard shortcuts for feed refresh and navigation", async () => 
   fireEvent.keyDown(window, { key: "h" });
   expect(await screen.findByRole("button", { name: "Home" })).toBeInTheDocument();
 });
+
+test("persists feed filters and allows reset", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  await screen.findByRole("button", { name: "Home" });
+
+  const searchInput = screen.getByRole("searchbox", { name: "Suche" });
+  fireEvent.change(searchInput, { target: { value: "pluesch" } });
+  fireEvent.click(screen.getByRole("button", { name: "Nur Likes" }));
+
+  fireEvent.click(screen.getByRole("button", { name: "Logout" }));
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const persistedSearchInput = await screen.findByRole("searchbox", { name: "Suche" });
+  expect(persistedSearchInput).toHaveValue("pluesch");
+
+  fireEvent.click(screen.getByRole("button", { name: "Filter zuruecksetzen" }));
+  expect(screen.getByRole("searchbox", { name: "Suche" })).toHaveValue("");
+});
