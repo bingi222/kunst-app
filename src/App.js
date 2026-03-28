@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 
 
 const styles = {
@@ -49,6 +49,7 @@ const styles = {
 
 const STORAGE_AUTH_TOKEN_KEY = "kunst-app.auth.token.v1";
 const API_BASE_URL = process.env.REACT_APP_API_URL || "";
+const EMPTY_COMMENTS = [];
 
 function readStorage(key, fallbackValue) {
   if (typeof window === "undefined") {
@@ -949,11 +950,11 @@ function CommentPanel({
   );
 }
 
-function Post({
+const Post = React.memo(function Post({
   post,
-  onProfile,
+  onOpenProfile,
   liked,
-  toggleLike,
+  onToggleLike,
   postRef,
   isHighlighted,
   comments,
@@ -985,7 +986,7 @@ function Post({
     >
       <button
         type="button"
-        onClick={() => onProfile(post)}
+        onClick={() => onOpenProfile(post)}
         style={{
           ...styles.iconBtn,
           width: "100%",
@@ -1003,19 +1004,19 @@ function Post({
             key={`${post.id}-${index}`}
             src={image}
             alt={`Artwork ${index + 1} von ${post.user}`}
-            onDoubleClick={toggleLike}
+            onDoubleClick={() => onToggleLike(post.id)}
             style={styles.image}
           />
         ))}
       </div>
 
       <div style={{ display: "flex", gap: "16px", padding: "10px 14px" }}>
-        <button type="button" onClick={toggleLike} style={styles.iconBtn} aria-label="Like umschalten">
+        <button type="button" onClick={() => onToggleLike(post.id)} style={styles.iconBtn} aria-label="Like umschalten">
           <HeartIcon active={liked} />
         </button>
         <button
           type="button"
-          onClick={onToggleComments}
+          onClick={() => onToggleComments(post.id)}
           style={styles.iconBtn}
           aria-label={commentsAriaLabel}
         >
@@ -1032,14 +1033,16 @@ function Post({
           isLoading={isCommentsLoading}
           errorText={commentErrorText}
           commentText={commentText}
-          onCommentTextChange={onCommentTextChange}
-          onSubmitComment={onSubmitComment}
+          onCommentTextChange={(value) => onCommentTextChange(post.id, value)}
+          onSubmitComment={() => onSubmitComment(post.id)}
           isSubmitting={isCommentSubmitting}
         />
       )}
     </article>
   );
-}
+});
+
+Post.displayName = "Post";
 
 function Profile({ data, onBack, isOwnProfile, onSaveProfile, onChangePassword }) {
   const [displayName, setDisplayName] = useState(data?.user || "");
@@ -1653,69 +1656,92 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const [sortOrder, setSortOrder] = useState("newest");
   const [feedErrorText, setFeedErrorText] = useState("");
   const [isFeedLoading, setIsFeedLoading] = useState(true);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const likesRef = useRef(likes);
+  const commentsByPostIdRef = useRef(commentsByPostId);
+  const expandedCommentsPostIdRef = useRef(expandedCommentsPostId);
+  const commentInputByPostIdRef = useRef(commentInputByPostId);
+  const commentErrorByPostIdRef = useRef(commentErrorByPostId);
 
-  const loadFeed = useMemo(
-    () => async () => {
-      setIsFeedLoading(true);
-      setFeedErrorText("");
-      try {
-        const feedResponse = await apiClient.getFeed();
-        setPosts(Array.isArray(feedResponse.posts) ? feedResponse.posts : []);
-        setLikes(feedResponse.likes || {});
-      } catch (error) {
-        setFeedErrorText(error.message || "Feed konnte nicht geladen werden.");
-        setPosts([]);
-        setLikes({});
-      } finally {
-        setIsFeedLoading(false);
-      }
-    },
-    [apiClient],
-  );
+  useEffect(() => {
+    likesRef.current = likes;
+  }, [likes]);
 
-  const loadNotifications = useMemo(
-    () => async () => {
-      setIsNotificationsLoading(true);
-      setNotificationsErrorText("");
-      try {
-        const response = await apiClient.getNotifications();
-        const list = Array.isArray(response.notifications) ? response.notifications : [];
-        setNotifications(list);
-        if (typeof response.unreadCount === "number" && Number.isFinite(response.unreadCount)) {
-          setUnreadNotificationsCount(Math.max(0, Number(response.unreadCount)));
-        } else {
-          setUnreadNotificationsCount(list.filter((notification) => !notification.read).length);
-        }
-      } catch (error) {
-        setNotificationsErrorText(error.message || "Aktivitaet konnte nicht geladen werden.");
-        setNotifications([]);
-        setUnreadNotificationsCount(0);
-      } finally {
-        setIsNotificationsLoading(false);
+  useEffect(() => {
+    commentsByPostIdRef.current = commentsByPostId;
+  }, [commentsByPostId]);
+
+  useEffect(() => {
+    expandedCommentsPostIdRef.current = expandedCommentsPostId;
+  }, [expandedCommentsPostId]);
+
+  useEffect(() => {
+    commentInputByPostIdRef.current = commentInputByPostId;
+  }, [commentInputByPostId]);
+
+  useEffect(() => {
+    commentErrorByPostIdRef.current = commentErrorByPostId;
+  }, [commentErrorByPostId]);
+
+  const loadFeed = useCallback(async () => {
+    setIsFeedLoading(true);
+    setFeedErrorText("");
+    try {
+      const feedResponse = await apiClient.getFeed();
+      setPosts(Array.isArray(feedResponse.posts) ? feedResponse.posts : []);
+      const nextLikes = feedResponse.likes || {};
+      setLikes(nextLikes);
+      likesRef.current = nextLikes;
+    } catch (error) {
+      setFeedErrorText(error.message || "Feed konnte nicht geladen werden.");
+      setPosts([]);
+      setLikes({});
+      likesRef.current = {};
+    } finally {
+      setIsFeedLoading(false);
+    }
+  }, [apiClient]);
+
+  const loadNotifications = useCallback(async () => {
+    setIsNotificationsLoading(true);
+    setNotificationsErrorText("");
+    try {
+      const response = await apiClient.getNotifications();
+      const list = Array.isArray(response.notifications) ? response.notifications : [];
+      setNotifications(list);
+      if (typeof response.unreadCount === "number" && Number.isFinite(response.unreadCount)) {
+        setUnreadNotificationsCount(Math.max(0, Number(response.unreadCount)));
+      } else {
+        setUnreadNotificationsCount(list.filter((notification) => !notification.read).length);
       }
-    },
-    [apiClient],
-  );
+    } catch (error) {
+      setNotificationsErrorText(error.message || "Aktivitaet konnte nicht geladen werden.");
+      setNotifications([]);
+      setUnreadNotificationsCount(0);
+    } finally {
+      setIsNotificationsLoading(false);
+    }
+  }, [apiClient]);
 
   const ownProfile = useMemo(() => createOwnProfile(currentUser, posts), [currentUser, posts]);
   const activeProfile = selectedProfile && !selectedProfile.isOwnProfile ? selectedProfile : ownProfile;
 
-  const openProfile = (post) => {
+  const openProfile = useCallback((post) => {
     const profileData = {
       ...post,
       isOwnProfile: post.ownerId === currentUser.id,
     };
     setSelectedProfile(profileData);
     setCurrent("profile");
-  };
+  }, [currentUser.id]);
 
-  const openOwnProfile = () => {
+  const openOwnProfile = useCallback(() => {
     setSelectedProfile(ownProfile);
     setCurrent("profile");
-  };
+  }, [ownProfile]);
 
-  const toggleLike = async (postId) => {
-    const previousLikes = likes;
+  const toggleLike = useCallback(async (postId) => {
+    const previousLikes = likesRef.current;
     const previousValue = Boolean(previousLikes[postId]);
     const optimisticLikes = { ...previousLikes };
     if (previousValue) {
@@ -1724,19 +1750,30 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
       optimisticLikes[postId] = true;
     }
     setLikes(optimisticLikes);
+    likesRef.current = optimisticLikes;
     setFeedErrorText("");
     try {
       const response = await apiClient.toggleLike(postId, !previousValue);
       if (typeof response?.liked === "boolean") {
-        setLikes((previous) => ({ ...previous, [postId]: response.liked }));
+        setLikes((previous) => {
+          const nextLikes = { ...previous };
+          if (response.liked) {
+            nextLikes[postId] = true;
+          } else {
+            delete nextLikes[postId];
+          }
+          likesRef.current = nextLikes;
+          return nextLikes;
+        });
       }
     } catch (error) {
       setLikes(previousLikes);
+      likesRef.current = previousLikes;
       setFeedErrorText(error.message || "Like konnte nicht gespeichert werden.");
     }
-  };
+  }, [apiClient]);
 
-  const loadCommentsForPost = async (postId) => {
+  const loadCommentsForPost = useCallback(async (postId) => {
     setCommentsLoadingByPostId((previous) => ({ ...previous, [postId]: true }));
     setCommentErrorByPostId((previous) => ({ ...previous, [postId]: "" }));
     try {
@@ -1753,23 +1790,25 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     } finally {
       setCommentsLoadingByPostId((previous) => ({ ...previous, [postId]: false }));
     }
-  };
+  }, [apiClient]);
 
-  const openCommentsForPost = async (postId) => {
-    if (expandedCommentsPostId === postId) {
+  const openCommentsForPost = useCallback(async (postId) => {
+    if (expandedCommentsPostIdRef.current === postId) {
       setExpandedCommentsPostId(null);
+      expandedCommentsPostIdRef.current = null;
       return;
     }
     setExpandedCommentsPostId(postId);
+    expandedCommentsPostIdRef.current = postId;
 
-    if (Array.isArray(commentsByPostId[postId])) {
+    if (Array.isArray(commentsByPostIdRef.current[postId])) {
       return;
     }
     await loadCommentsForPost(postId);
-  };
+  }, [loadCommentsForPost]);
 
-  const submitComment = async (postId) => {
-    const rawText = commentInputByPostId[postId] || "";
+  const submitComment = useCallback(async (postId) => {
+    const rawText = commentInputByPostIdRef.current[postId] || "";
     const text = rawText.trim();
     if (!text) {
       setCommentErrorByPostId((previous) => ({
@@ -1792,12 +1831,20 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     try {
       const response = await apiClient.createComment(postId, { text });
       if (response?.comment) {
-        setCommentsByPostId((previous) => ({
-          ...previous,
-          [postId]: [...(previous[postId] || []), response.comment],
-        }));
+        setCommentsByPostId((previous) => {
+          const nextCommentsByPostId = {
+            ...previous,
+            [postId]: [...(previous[postId] || []), response.comment],
+          };
+          commentsByPostIdRef.current = nextCommentsByPostId;
+          return nextCommentsByPostId;
+        });
       }
-      setCommentInputByPostId((previous) => ({ ...previous, [postId]: "" }));
+      setCommentInputByPostId((previous) => {
+        const nextInputByPostId = { ...previous, [postId]: "" };
+        commentInputByPostIdRef.current = nextInputByPostId;
+        return nextInputByPostId;
+      });
     } catch (error) {
       setCommentErrorByPostId((previous) => ({
         ...previous,
@@ -1806,7 +1853,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     } finally {
       setCommentSubmittingByPostId((previous) => ({ ...previous, [postId]: false }));
     }
-  };
+  }, [apiClient]);
 
   const markAllNotificationsRead = async () => {
     const previousNotifications = notifications;
@@ -1865,7 +1912,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   }, [loadFeed, loadNotifications, currentUser.id]);
 
   const visiblePosts = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
     let nextPosts = [...posts];
 
     if (normalizedQuery) {
@@ -1887,7 +1934,36 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     });
 
     return nextPosts;
-  }, [posts, likes, searchQuery, feedMode, sortOrder]);
+  }, [posts, likes, deferredSearchQuery, feedMode, sortOrder]);
+
+  const handleToggleComments = useCallback(
+    (postId) => {
+      openCommentsForPost(postId);
+    },
+    [openCommentsForPost],
+  );
+
+  const handleCommentTextChange = useCallback((postId, value) => {
+    setCommentInputByPostId((previous) => {
+      const nextInputByPostId = { ...previous, [postId]: value };
+      commentInputByPostIdRef.current = nextInputByPostId;
+      return nextInputByPostId;
+    });
+    if (commentErrorByPostIdRef.current[postId]) {
+      setCommentErrorByPostId((previous) => {
+        const nextErrorByPostId = { ...previous, [postId]: "" };
+        commentErrorByPostIdRef.current = nextErrorByPostId;
+        return nextErrorByPostId;
+      });
+    }
+  }, []);
+
+  const handleSubmitComment = useCallback(
+    (postId) => {
+      submitComment(postId);
+    },
+    [submitComment],
+  );
 
   useEffect(() => {
     if (current !== "feed" || highlightedPostId === null) {
@@ -1966,28 +2042,17 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
               <Post
                 key={post.id}
                 post={post}
-                onProfile={openProfile}
+                onOpenProfile={openProfile}
                 liked={Boolean(likes[post.id])}
-                toggleLike={() => {
-                  toggleLike(post.id);
-                }}
+                onToggleLike={toggleLike}
                 isHighlighted={Number(post.id) === Number(highlightedPostId)}
-                comments={commentsByPostId[post.id] || []}
+                comments={commentsByPostId[post.id] || EMPTY_COMMENTS}
                 commentCount={Array.isArray(commentsByPostId[post.id]) ? commentsByPostId[post.id].length : Number(post.commentCount) || 0}
                 isCommentsOpen={expandedCommentsPostId === post.id}
-                onToggleComments={() => {
-                  openCommentsForPost(post.id);
-                }}
+                onToggleComments={handleToggleComments}
                 commentText={commentInputByPostId[post.id] || ""}
-                onCommentTextChange={(value) => {
-                  setCommentInputByPostId((previous) => ({ ...previous, [post.id]: value }));
-                  if (commentErrorByPostId[post.id]) {
-                    setCommentErrorByPostId((previous) => ({ ...previous, [post.id]: "" }));
-                  }
-                }}
-                onSubmitComment={() => {
-                  submitComment(post.id);
-                }}
+                onCommentTextChange={handleCommentTextChange}
+                onSubmitComment={handleSubmitComment}
                 isCommentsLoading={Boolean(commentsLoadingByPostId[post.id])}
                 isCommentSubmitting={Boolean(commentSubmittingByPostId[post.id])}
                 commentErrorText={commentErrorByPostId[post.id] || ""}
