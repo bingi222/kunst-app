@@ -1,21 +1,40 @@
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 
 
+const TOKENS = {
+  radius: {
+    sm: "10px",
+    md: "16px",
+    lg: "18px",
+    pill: "999px",
+  },
+  spacing: {
+    xs: "6px",
+    sm: "10px",
+    md: "14px",
+    lg: "20px",
+  },
+  elevation: {
+    soft: "0 10px 24px rgba(0, 0, 0, 0.42)",
+    neon: "0 0 0 1px rgba(176, 125, 255, 0.3), 0 0 22px rgba(176, 125, 255, 0.23), 0 14px 28px rgba(0, 0, 0, 0.52)",
+  },
+};
+
 const styles = {
   app: {
     background:
       "radial-gradient(circle at 15% 0%, #3f1f6f 0%, #161426 35%, #090910 66%), radial-gradient(circle at 92% 4%, rgba(0, 245, 255, 0.14) 0%, rgba(0, 0, 0, 0) 40%)",
     color: "#f6f2ff",
     minHeight: "100vh",
-    paddingBottom: "90px",
+    paddingBottom: "96px",
   },
   card: {
-    marginBottom: "20px",
+    marginBottom: TOKENS.spacing.lg,
     border: "1px solid #4f3293",
-    borderRadius: "16px",
+    borderRadius: TOKENS.radius.md,
     overflow: "hidden",
     background: "linear-gradient(145deg, #1a1430 0%, #0d101c 100%)",
-    boxShadow: "0 0 0 1px rgba(186, 120, 255, 0.15), 0 14px 30px rgba(0, 0, 0, 0.48)",
+    boxShadow: "0 0 0 1px rgba(186, 120, 255, 0.15), 0 16px 32px rgba(0, 0, 0, 0.5)",
   },
   imageGrid: {
     display: "grid",
@@ -46,9 +65,8 @@ const styles = {
     width: "min(94vw, 700px)",
     background: "rgba(12, 10, 24, 0.9)",
     border: "1px solid #4f39a0",
-    borderRadius: "999px",
-    boxShadow:
-      "0 0 0 1px rgba(176, 125, 255, 0.3), 0 0 22px rgba(176, 125, 255, 0.23), 0 14px 28px rgba(0, 0, 0, 0.52)",
+    borderRadius: TOKENS.radius.pill,
+    boxShadow: TOKENS.elevation.neon,
     backdropFilter: "blur(10px)",
     display: "flex",
     justifyContent: "space-around",
