@@ -602,8 +602,10 @@ test("supports manual feed refresh", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
   await screen.findByRole("button", { name: "Home" });
-
-  fireEvent.click(screen.getByRole("button", { name: "Aktualisieren" }));
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: /Aktualisier/ })).not.toBeDisabled();
+  });
+  fireEvent.click(screen.getByRole("button", { name: /Aktualisier/ }));
 
   await waitFor(() => {
     expect(global.fetch).toHaveBeenCalledWith("/api/feed", expect.any(Object));
@@ -701,6 +703,6 @@ test("persists feed filters and allows reset", async () => {
   const persistedSearchInput = await screen.findByRole("searchbox", { name: "Suche" });
   expect(persistedSearchInput).toHaveValue("pluesch");
 
-  fireEvent.click(screen.getByRole("button", { name: "Filter zuruecksetzen" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Filter zuruecksetzen" }));
   expect(screen.getByRole("searchbox", { name: "Suche" })).toHaveValue("");
 });
