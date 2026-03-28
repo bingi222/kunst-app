@@ -589,3 +589,23 @@ test("renders fallback notification text when message is missing", async () => {
   fireEvent.click(await screen.findByRole("button", { name: /Aktivitaet/ }));
   expect(await screen.findByText(/hat deinen Beitrag geliked/)).toBeInTheDocument();
 });
+
+test("supports manual feed refresh", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  await screen.findByRole("button", { name: "Home" });
+
+  fireEvent.click(screen.getByRole("button", { name: "Aktualisieren" }));
+
+  await waitFor(() => {
+    expect(global.fetch).toHaveBeenCalledWith("/api/feed", expect.any(Object));
+  });
+});

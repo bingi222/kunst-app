@@ -545,6 +545,9 @@ function FeedToolbar({
   setFeedMode,
   sortOrder,
   setSortOrder,
+  onRefresh,
+  isRefreshing,
+  lastUpdatedAt,
 }) {
   const controlButtonStyle = (active) => ({
     ...styles.iconBtn,
@@ -556,12 +559,29 @@ function FeedToolbar({
     opacity: active ? 1 : 0.65,
     background: active ? "#1d1d1d" : "transparent",
   });
+  const refreshButtonStyle = {
+    ...styles.iconBtn,
+    border: "1px solid #4f3293",
+    borderRadius: "999px",
+    padding: "6px 10px",
+    fontSize: "12px",
+    fontWeight: 700,
+    boxShadow: "0 0 0 1px rgba(186, 120, 255, 0.2)",
+  };
+  const lastUpdatedLabel = lastUpdatedAt
+    ? `Zuletzt aktualisiert ${formatRelativeTime(lastUpdatedAt)}`
+    : "Noch nicht aktualisiert";
 
   return (
     <section style={{ marginBottom: "16px" }}>
-      <label htmlFor="feed-search" style={{ display: "block", marginBottom: "8px", fontSize: "13px", opacity: 0.8 }}>
-        Suche
-      </label>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "8px" }}>
+        <label htmlFor="feed-search" style={{ marginBottom: 0, fontSize: "13px", opacity: 0.8 }}>
+          Suche
+        </label>
+        <button type="button" onClick={onRefresh} disabled={isRefreshing} style={refreshButtonStyle}>
+          {isRefreshing ? "Aktualisiere..." : "Aktualisieren"}
+        </button>
+      </div>
       <input
         id="feed-search"
         type="search"
@@ -579,6 +599,7 @@ function FeedToolbar({
           marginBottom: "10px",
         }}
       />
+      <p style={{ marginTop: 0, marginBottom: "10px", fontSize: "11px", color: "#9d94bf" }}>{lastUpdatedLabel}</p>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
         <button type="button" onClick={() => setFeedMode("all")} style={controlButtonStyle(feedMode === "all")}>
