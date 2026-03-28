@@ -167,6 +167,38 @@ function readFileAsDataUrl(file) {
   });
 }
 
+function getPasswordStrength(value) {
+  const normalized = (value || "").trim();
+  if (!normalized) {
+    return { label: "Keine Eingabe", color: "#8f8f8f" };
+  }
+
+  let score = 0;
+  if (normalized.length >= 8) {
+    score += 1;
+  }
+  if (/[A-Z]/.test(normalized)) {
+    score += 1;
+  }
+  if (/[a-z]/.test(normalized)) {
+    score += 1;
+  }
+  if (/[0-9]/.test(normalized)) {
+    score += 1;
+  }
+  if (/[^A-Za-z0-9]/.test(normalized)) {
+    score += 1;
+  }
+
+  if (normalized.length < 6 || score <= 1) {
+    return { label: "Schwach", color: "#ff8f8f" };
+  }
+  if (score <= 3) {
+    return { label: "Mittel", color: "#ffd479" };
+  }
+  return { label: "Stark", color: "#9aff9a" };
+}
+
 class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -204,6 +236,7 @@ function AuthScreen({ onLogin, onRegister }) {
   const [errorText, setErrorText] = useState("");
 
   const isRegister = mode === "register";
+  const registerPasswordStrength = useMemo(() => getPasswordStrength(password), [password]);
 
   const submitAuth = (event) => {
     event.preventDefault();
@@ -306,6 +339,11 @@ function AuthScreen({ onLogin, onRegister }) {
             }}
           />
         </label>
+        {isRegister && (
+          <p style={{ marginTop: "-2px", marginBottom: "10px", color: registerPasswordStrength.color, fontSize: "12px" }}>
+            Passwortstaerke: {registerPasswordStrength.label}
+          </p>
+        )}
 
         {errorText && <p style={{ color: "#ff8f8f", marginBottom: "12px" }}>{errorText}</p>}
 

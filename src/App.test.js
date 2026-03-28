@@ -73,3 +73,14 @@ test("allows changing profile password", () => {
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
   expect(screen.getByText("KUNST")).toBeInTheDocument();
 });
+
+test("shows password strength in register mode", () => {
+  render(<App />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Noch kein Konto? Jetzt registrieren" }));
+  fireEvent.change(screen.getByPlaceholderText("Mindestens 6 Zeichen"), {
+    target: { value: "Test123!" },
+  });
+
+  expect(screen.getByText(/Passwortstaerke:/)).toBeInTheDocument();
+});
