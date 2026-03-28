@@ -156,6 +156,25 @@ function formatRelativeTime(timestamp) {
   return `vor ${days}d`;
 }
 
+function buildNotificationMessage(notification) {
+  if (!notification) {
+    return "Neue Aktivitaet.";
+  }
+  const actorName = String(notification.actorName || "Jemand");
+  const type = String(notification.type || "").toLowerCase();
+  const fallbackText = String(notification.text || "").trim();
+  if (fallbackText) {
+    return fallbackText;
+  }
+  if (type === "like") {
+    return `${actorName} hat deinen Beitrag geliked.`;
+  }
+  if (type === "comment") {
+    return `${actorName} hat deinen Beitrag kommentiert.`;
+  }
+  return `${actorName} hat eine neue Aktivitaet ausgeloest.`;
+}
+
 function createApiClient(token) {
   const request = async (path, options = {}) => {
     const headers = {
@@ -663,7 +682,16 @@ function BottomNav({ current, setCurrent, onOpenOwnProfile, unreadNotificationsC
   );
 }
 
-function Activity({ notifications, isLoading, errorText, onMarkAllRead, onMarkRead, onOpenPost, onBack }) {
+function Activity({
+  notifications,
+  isLoading,
+  errorText,
+  onReload,
+  onMarkAllRead,
+  onMarkRead,
+  onOpenPost,
+  onBack,
+}) {
   const unreadCount = notifications.filter((notification) => !notification.read).length;
 
   return (
@@ -698,7 +726,18 @@ function Activity({ notifications, isLoading, errorText, onMarkAllRead, onMarkRe
             marginBottom: "10px",
           }}
         >
-          {errorText}
+          <p style={{ marginTop: 0, marginBottom: "8px" }}>{errorText}</p>
+          <button
+            type="button"
+            onClick={onReload}
+            style={{
+              ...styles.iconBtn,
+              fontSize: "12px",
+              textDecoration: "underline",
+            }}
+          >
+            Erneut versuchen
+          </button>
         </div>
       )}
       {isLoading ? (
@@ -740,45 +779,60 @@ function Activity({ notifications, isLoading, errorText, onMarkAllRead, onMarkRe
                 background: notification.read ? "#0b0b0b" : "#121212",
               }}
             >
-              <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.4 }}>
-                <strong>{notification.actorName}</strong> {notification.message || notification.text || ""}
-              </p>
-              <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#8f8f8f" }}>
-                {formatRelativeTime(notification.createdAt)}
-              </p>
-              {Number.isFinite(Number(notification.postId)) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onOpenPost) {
-                      onOpenPost(notification);
-                    }
-                  }}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                <SafeImage
+                  src={notification.actorAvatar}
+                  alt={`${notification.actorName || "User"} Avatar`}
                   style={{
-                    ...styles.iconBtn,
-                    marginTop: "8px",
-                    marginRight: "10px",
-                    fontSize: "12px",
-                    textDecoration: "underline",
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    background: "#111",
+                    flexShrink: 0,
                   }}
-                >
-                  Zum Beitrag
-                </button>
-              )}
-              {!notification.read && (
-                <button
-                  type="button"
-                  onClick={() => onMarkRead(notification.id)}
-                  style={{
-                    ...styles.iconBtn,
-                    marginTop: "8px",
-                    fontSize: "12px",
-                    textDecoration: "underline",
-                  }}
-                >
-                  Als gelesen markieren
-                </button>
-              )}
+                />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.4 }}>
+                    <strong>{notification.actorName || "Jemand"}</strong> {buildNotificationMessage(notification)}
+                  </p>
+                  <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#8f8f8f" }}>
+                    {formatRelativeTime(notification.createdAt)}
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "8px" }}>
+                    {Number.isFinite(Number(notification.postId)) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onOpenPost) {
+                            onOpenPost(notification);
+                          }
+                        }}
+                        style={{
+                          ...styles.iconBtn,
+                          fontSize: "12px",
+                          textDecoration: "underline",
+                        }}
+                      >
+                        Zum Beitrag
+                      </button>
+                    )}
+                    {!notification.read && (
+                      <button
+                        type="button"
+                        onClick={() => onMarkRead(notification.id)}
+                        style={{
+                          ...styles.iconBtn,
+                          fontSize: "12px",
+                          textDecoration: "underline",
+                        }}
+                      >
+                        Als gelesen markieren
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -1797,6 +1851,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     setSearchQuery("");
     setFeedMode("all");
     setSortOrder("newest");
+    setFeedErrorText("");
     setHighlightedPostId(targetPostId);
 
     if (notification?.id && !notification.read) {
@@ -1947,6 +2002,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
           notifications={notifications}
           isLoading={isNotificationsLoading}
           errorText={notificationsErrorText}
+          onReload={loadNotifications}
           onMarkAllRead={markAllNotificationsRead}
           onMarkRead={markNotificationRead}
           onOpenPost={openPostFromNotification}

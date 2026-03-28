@@ -127,6 +127,17 @@ function createNotification({ recipientUserId, actorUser, type, postId, text }) 
     return null;
   }
 
+  let resolvedText = String(text || "").trim();
+  if (!resolvedText) {
+    if (type === "like") {
+      resolvedText = "hat deinen Beitrag geliked.";
+    } else if (type === "comment") {
+      resolvedText = "hat kommentiert.";
+    } else {
+      resolvedText = "hat mit deinem Beitrag interagiert.";
+    }
+  }
+
   const notification = {
     id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     type,
@@ -134,7 +145,7 @@ function createNotification({ recipientUserId, actorUser, type, postId, text }) 
     actorUserId: actorUser.id,
     actorName: actorUser.displayName,
     actorAvatar: actorUser.avatar,
-    text: String(text || ""),
+    text: resolvedText,
     createdAt: Date.now(),
     read: false,
   };
@@ -163,6 +174,7 @@ function toNotificationPayload(notification) {
     actorName: notification.actorName,
     actorAvatar: notification.actorAvatar,
     text: notification.text,
+    message: notification.text,
     createdAt: notification.createdAt,
     read: Boolean(notification.read),
   };

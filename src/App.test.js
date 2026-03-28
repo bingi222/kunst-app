@@ -511,3 +511,32 @@ test("opens related post from activity notification", async () => {
   });
   expect(targetPostButton).toBeInTheDocument();
 });
+
+test("renders fallback notification text when message is missing", async () => {
+  notificationsByUserId["u-bingi"] = [
+    {
+      id: 9003,
+      type: "like",
+      postId: 2,
+      actorId: "u-pluesch",
+      actorName: "Pluesch",
+      actorAvatar: "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch",
+      text: "",
+      read: false,
+      createdAt: Date.now() - 5_000,
+    },
+  ];
+
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  fireEvent.click(await screen.findByRole("button", { name: /Aktivitaet/ }));
+  expect(await screen.findByText(/hat deinen Beitrag geliked/)).toBeInTheDocument();
+});
