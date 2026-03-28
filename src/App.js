@@ -1,361 +1,397 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
-/* ---------- DATEN ---------- */
+const AVATAR_BINGI = "https://api.dicebear.com/9.x/initials/svg?seed=Bingi";
+const AVATAR_PLUESCH = "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch";
+const AVATAR_GIREAM = "https://api.dicebear.com/9.x/initials/svg?seed=Giream";
+
 const initialPosts = [
   {
     id: 1,
     user: "Bingi",
     bio: "Digital minimal art",
-    avatar: "https://i.pravatar.cc/100?img=1",
+    avatar: AVATAR_BINGI,
     images: [
-      "https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=1200",
-      "https://images.unsplash.com/photo-1579783901586-d88db74b4fe4?q=80&w=1200",
-      "https://images.unsplash.com/photo-1504198453319-5ce911bafcde?q=80&w=1200",
+      "https://picsum.photos/seed/bingi-1/900/600",
+      "https://picsum.photos/seed/bingi-2/900/600",
+      "https://picsum.photos/seed/bingi-3/900/600",
     ],
   },
   {
     id: 2,
-    user: "Plüsch",
+    user: "Pluesch",
     bio: "Abstract emotions",
-    avatar: "https://i.pravatar.cc/100?img=2",
+    avatar: AVATAR_PLUESCH,
     images: [
-      "https://images.unsplash.com/photo-1492724441997-5dc865305da7?q=80&w=1200",
-      "https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?q=80&w=1200",
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200",
+      "https://picsum.photos/seed/pluesch-1/900/600",
+      "https://picsum.photos/seed/pluesch-2/900/600",
+      "https://picsum.photos/seed/pluesch-3/900/600",
     ],
   },
   {
     id: 3,
     user: "Giream",
     bio: "Visual storytelling",
-    avatar: "https://i.pravatar.cc/100?img=3",
+    avatar: AVATAR_GIREAM,
     images: [
-      "https://images.unsplash.com/photo-1541961017774-22349e4a1262?q=80&w=1200",
-      "https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=1200",
-      "https://images.unsplash.com/photo-1520697222860-4b1a4c9d0b3f?q=80&w=1200",
+      "https://picsum.photos/seed/giream-1/900/600",
+      "https://picsum.photos/seed/giream-2/900/600",
+      "https://picsum.photos/seed/giream-3/900/600",
     ],
   },
 ];
 
-/* ---------- HEADER ---------- */
+const styles = {
+  app: {
+    background: "#000",
+    color: "#fff",
+    minHeight: "100vh",
+    paddingBottom: "72px",
+  },
+  card: {
+    marginBottom: "24px",
+    border: "1px solid #1f1f1f",
+    borderRadius: "12px",
+    overflow: "hidden",
+    background: "#0b0b0b",
+  },
+  imageGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: "4px",
+  },
+  image: {
+    width: "100%",
+    height: "140px",
+    objectFit: "cover",
+    background: "#161616",
+  },
+  iconBtn: {
+    background: "transparent",
+    border: "none",
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: "19px",
+    padding: 0,
+  },
+  nav: {
+    position: "fixed",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: "#000",
+    borderTop: "1px solid #1f1f1f",
+    display: "flex",
+    justifyContent: "space-around",
+    padding: "10px 0",
+  },
+};
+
+class AppErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    // Keep the app usable even if one subtree crashes.
+    // eslint-disable-next-line no-console
+    console.error("UI crash captured by ErrorBoundary:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: "24px", color: "#fff", background: "#000", minHeight: "100vh" }}>
+          <h1>Inhalte konnten nicht vollstaendig geladen werden</h1>
+          <p>Bitte Seite neu laden. Die Anwendung bleibt stabil und zeigt Basisinhalte an.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function Header({ title }) {
   return (
-    <div style={{
-      position: "sticky",
-      top: 0,
-      background: "black",
-      padding: "16px",
-      borderBottom: "1px solid #222",
-      color: "white",
-      textAlign: "center"
-    }}>
-      <b>{title}</b>
-    </div>
-  );
-}
-
-/* ---------- ICONS ---------- */
-function IconHeart({ active, onClick, trigger }) {
-  const [anim, setAnim] = useState(false);
-
-  const runAnim = () => {
-    setAnim(true);
-    setTimeout(() => setAnim(false), 300);
-  };
-
-  const handleClick = () => {
-    runAnim();
-    onClick();
-  };
-
-  React.useEffect(() => {
-    if (trigger) runAnim();
-  }, [trigger]);
-
-  return (
-    <svg
-      onClick={handleClick}
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill={active ? "white" : "none"}
-      stroke="white"
-      strokeWidth="1.5"
+    <header
       style={{
-        cursor: "pointer",
-        opacity: active ? 1 : 0.7,
-        transform: anim
-          ? "scale(1.3) rotate(-8deg)"
-          : "scale(1) rotate(0deg)",
-        transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-        filter: active && anim
-          ? "drop-shadow(0 0 6px rgba(255,255,255,0.6))"
-          : "none"
+        position: "sticky",
+        top: 0,
+        background: "#000",
+        padding: "16px",
+        borderBottom: "1px solid #1f1f1f",
+        textAlign: "center",
+        zIndex: 10,
       }}
     >
-      <path d="M20.8 4.6c-1.5-1.5-4-1.5-5.5 0L12 7.9 8.7 4.6c-1.5-1.5-4-1.5-5.5 0s-1.5 4 0 5.5L12 21l8.8-10.9c1.5-1.5 1.5-4 0-5.5z"/>
-    </svg>
+      <b>{title}</b>
+    </header>
   );
 }
 
-function IconComment({ onClick }) {
+function SafeImage({ src, alt, style, onDoubleClick }) {
+  const [failed, setFailed] = useState(false);
+  if (failed || !src) {
+    return (
+      <div
+        style={{
+          ...style,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "#8c8c8c",
+          fontSize: "12px",
+          border: "1px dashed #333",
+        }}
+      >
+        Bild nicht verfuegbar
+      </div>
+    );
+  }
+
   return (
-    <svg
-      onClick={onClick}
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="white"
-      strokeWidth="1.5"
-      style={{ cursor: "pointer", opacity: 0.7 }}
-    >
-      <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
-    </svg>
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
+      onDoubleClick={onDoubleClick}
+      onError={() => setFailed(true)}
+      style={style}
+    />
   );
 }
 
-/* ---------- NAV ---------- */
 function BottomNav({ current, setCurrent }) {
-  const getStyle = (tab) => ({
-    color: current === tab ? "white" : "#777",
-    cursor: "pointer",
-    transition: "all 0.25s ease",
-    transform: current === tab ? "scale(1.1)" : "scale(1)",
-    textShadow: current === tab
-      ? "0 0 8px rgba(255,255,255,0.8)"
-      : "none",
+  const linkStyle = (tab) => ({
+    ...styles.iconBtn,
+    fontSize: "14px",
+    opacity: current === tab ? 1 : 0.6,
+    fontWeight: current === tab ? 700 : 400,
   });
 
   return (
-    <div style={{
-      position: "fixed",
-      bottom: 0,
-      width: "100%",
-      background: "black",
-      borderTop: "1px solid #222",
-      display: "flex",
-      justifyContent: "space-around",
-      padding: "10px 0"
-    }}>
-      <span onClick={() => setCurrent("feed")} style={getStyle("feed")}>
+    <nav style={styles.nav}>
+      <button type="button" onClick={() => setCurrent("feed")} style={linkStyle("feed")}>
         Home
-      </span>
-
-      <span
-        onClick={() => setCurrent("upload")}
-        style={{ ...getStyle("upload"), fontSize: "20px" }}
-      >
-        +
-      </span>
-
-      <span onClick={() => setCurrent("profile")} style={getStyle("profile")}>
+      </button>
+      <button type="button" onClick={() => setCurrent("upload")} style={linkStyle("upload")}>
+        Upload
+      </button>
+      <button type="button" onClick={() => setCurrent("profile")} style={linkStyle("profile")}>
         Mein Profil
-      </span>
-    </div>
+      </button>
+    </nav>
   );
 }
 
-/* ---------- POST ---------- */
 function Post({ post, onProfile, liked, toggleLike }) {
-  const [lastTap, setLastTap] = useState(0);
-  const [triggerAnim, setTriggerAnim] = useState(false);
-
-  const handleDoubleTap = () => {
-    const now = Date.now();
-    const DELAY = 300;
-
-    if (now - lastTap < DELAY) {
-      toggleLike();
-      setTriggerAnim(true);
-      setTimeout(() => setTriggerAnim(false), 10);
-    }
-
-    setLastTap(now);
-  };
-
   return (
-    <div style={{ marginBottom: "40px" }}>
-      <div onClick={() => onProfile(post)} style={{
-        padding: "14px",
-        color: "white",
-        fontWeight: "600",
-        cursor: "pointer"
-      }}>
+    <article style={styles.card}>
+      <button
+        type="button"
+        onClick={() => onProfile(post)}
+        style={{
+          ...styles.iconBtn,
+          width: "100%",
+          textAlign: "left",
+          padding: "12px 14px",
+          fontWeight: 700,
+        }}
+      >
         {post.user}
-      </div>
+      </button>
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr 1fr",
-        gap: "4px"
-      }}>
-        {post.images.map((img, i) => (
-          <img
-            key={i}
-            src={img}
-            alt=""
-            onClick={handleDoubleTap}
-            style={{
-              width: "100%",
-              height: "140px",
-              objectFit: "cover",
-              cursor: "pointer",
-              transition: "0.2s"
-            }}
-            onMouseOver={e => e.target.style.opacity = 0.7}
-            onMouseOut={e => e.target.style.opacity = 1}
+      <div style={styles.imageGrid}>
+        {post.images.map((image, index) => (
+          <SafeImage
+            key={`${post.id}-${index}`}
+            src={image}
+            alt={`Artwork ${index + 1} von ${post.user}`}
+            onDoubleClick={toggleLike}
+            style={styles.image}
           />
         ))}
       </div>
 
       <div style={{ display: "flex", gap: "16px", padding: "10px 14px" }}>
-        <IconHeart active={liked} onClick={toggleLike} trigger={triggerAnim} />
-        <IconComment onClick={() => alert("Kommentare kommen später")} />
+        <button type="button" onClick={toggleLike} style={styles.iconBtn} aria-label="Like umschalten">
+          {liked ? "♥" : "♡"}
+        </button>
+        <button
+          type="button"
+          onClick={() => window.alert("Kommentare kommen spaeter")}
+          style={styles.iconBtn}
+          aria-label="Kommentare"
+        >
+          💬
+        </button>
       </div>
-    </div>
+    </article>
   );
 }
 
-/* ---------- PROFILE ---------- */
 function Profile({ data, onBack }) {
-  return (
-    <div style={{ color: "white" }}>
-      <div style={{ padding: "10px" }}>
-        <span onClick={onBack} style={{ cursor: "pointer" }}>← Zurück</span>
-      </div>
-
+  if (!data) {
+    return (
       <div style={{ padding: "20px" }}>
-        <img src={data.avatar} alt=""
-          style={{ width: 70, height: 70, borderRadius: "50%" }} />
-        <h2>{data.user}</h2>
-        <p style={{ opacity: 0.6 }}>{data.bio}</p>
+        <p>Kein Profil ausgewaehlt.</p>
+      </div>
+    );
+  }
+
+  return (
+    <section>
+      <div style={{ padding: "12px 16px" }}>
+        <button type="button" onClick={onBack} style={styles.iconBtn}>
+          ← Zurueck
+        </button>
       </div>
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: "4px"
-      }}>
-        {data.images.map((img, i) => (
-          <img key={i} src={img} alt=""
-            style={{
-              width: "100%",
-              height: 200,
-              objectFit: "cover",
-              cursor: "pointer",
-              transition: "0.2s"
-            }}
-            onMouseOver={e => e.target.style.opacity = 0.7}
-            onMouseOut={e => e.target.style.opacity = 1}
+      <div style={{ padding: "0 20px 20px" }}>
+        <SafeImage
+          src={data.avatar}
+          alt={`${data.user} Avatar`}
+          style={{ width: 70, height: 70, borderRadius: "50%", objectFit: "cover", background: "#111" }}
+        />
+        <h2>{data.user}</h2>
+        <p style={{ opacity: 0.7 }}>{data.bio}</p>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
+        {data.images.map((image, index) => (
+          <SafeImage
+            key={`${data.id}-profile-${index}`}
+            src={image}
+            alt={`Profilbild ${index + 1}`}
+            style={{ width: "100%", height: 180, objectFit: "cover", background: "#161616" }}
           />
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
-/* ---------- UPLOAD ---------- */
 function Upload({ onBack, onPost }) {
-  const [image, setImage] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
   return (
-    <div style={{ color: "white", padding: "20px" }}>
-      <span onClick={onBack} style={{ cursor: "pointer" }}>← Zurück</span>
-
+    <section style={{ padding: "20px" }}>
+      <button type="button" onClick={onBack} style={styles.iconBtn}>
+        ← Zurueck
+      </button>
       <h2 style={{ marginTop: "20px" }}>Upload</h2>
-
       <input
-        placeholder="Bild URL einfügen"
-        value={image}
-        onChange={(e) => setImage(e.target.value)}
+        type="url"
+        placeholder="Bild-URL einfuegen"
+        value={imageUrl}
+        onChange={(event) => setImageUrl(event.target.value)}
         style={{
           width: "100%",
           padding: "12px",
-          marginTop: "20px",
+          marginTop: "12px",
           background: "#111",
           border: "1px solid #333",
-          color: "white"
+          color: "#fff",
+          borderRadius: "8px",
+          boxSizing: "border-box",
         }}
       />
 
       <button
+        type="button"
         onClick={() => {
-          if (!image) return;
-
+          const normalized = imageUrl.trim();
+          if (!normalized) {
+            return;
+          }
           onPost({
             id: Date.now(),
             user: "Bingi",
             bio: "Digital minimal art",
-            avatar: "https://i.pravatar.cc/100?img=1",
-            images: [image],
+            avatar: AVATAR_BINGI,
+            images: [normalized],
           });
-
+          setImageUrl("");
           onBack();
         }}
         style={{
-          marginTop: "20px",
+          marginTop: "14px",
           padding: "12px",
           width: "100%",
-          background: "white",
-          color: "black",
+          background: "#fff",
+          color: "#000",
           border: "none",
-          cursor: "pointer"
+          borderRadius: "8px",
+          cursor: "pointer",
+          fontWeight: 700,
         }}
       >
         Posten
       </button>
-    </div>
+    </section>
   );
 }
 
-/* ---------- APP ---------- */
-export default function App() {
+function AppContent() {
   const [current, setCurrent] = useState("feed");
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [likes, setLikes] = useState({});
   const [posts, setPosts] = useState(initialPosts);
 
-  const toggleLike = (id) => {
-    setLikes(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  const fallbackProfile = useMemo(() => posts[0] || null, [posts]);
+  const activeProfile = selectedProfile || fallbackProfile;
 
   const openProfile = (post) => {
     setSelectedProfile(post);
     setCurrent("profile");
   };
 
+  const toggleLike = (postId) => {
+    setLikes((previous) => ({ ...previous, [postId]: !previous[postId] }));
+  };
+
   return (
-    <div style={{ background: "black", minHeight: "100vh", paddingBottom: "60px" }}>
-      
+    <div style={styles.app}>
       <Header title="KUNST" />
 
       {current === "feed" && (
-        <div style={{ maxWidth: 600, margin: "0 auto" }}>
-          {posts.map(post => (
+        <main style={{ maxWidth: 640, margin: "0 auto", padding: "14px" }}>
+          {posts.map((post) => (
             <Post
               key={post.id}
               post={post}
               onProfile={openProfile}
-              liked={likes[post.id]}
+              liked={Boolean(likes[post.id])}
               toggleLike={() => toggleLike(post.id)}
             />
           ))}
-        </div>
+        </main>
       )}
 
-      {current === "profile" && selectedProfile && (
-        <Profile data={selectedProfile} onBack={() => setCurrent("feed")} />
-      )}
+      {current === "profile" && <Profile data={activeProfile} onBack={() => setCurrent("feed")} />}
 
       {current === "upload" && (
         <Upload
           onBack={() => setCurrent("feed")}
-          onPost={(newPost) => setPosts(prev => [newPost, ...prev])}
+          onPost={(newPost) => setPosts((previous) => [newPost, ...previous])}
         />
       )}
 
       <BottomNav current={current} setCurrent={setCurrent} />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AppErrorBoundary>
+      <AppContent />
+    </AppErrorBoundary>
   );
 }
