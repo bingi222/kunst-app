@@ -78,6 +78,7 @@ const styles = {
 const STORAGE_AUTH_TOKEN_KEY = "kunst-app.auth.token.v1";
 const API_BASE_URL = process.env.REACT_APP_API_URL || "";
 const EMPTY_COMMENTS = [];
+const MARK_ALL_UNDO_WINDOW_MS = 5000;
 function readStorage(key, fallbackValue) {
   if (typeof window === "undefined") {
     return fallbackValue;
@@ -774,6 +775,9 @@ function Activity({
   errorText,
   onReload,
   onMarkAllRead,
+  canMarkAllRead,
+  showUndoMarkAll,
+  onUndoMarkAll,
   onMarkRead,
   onOpenPost,
   onBack,
@@ -789,17 +793,48 @@ function Activity({
         <button
           type="button"
           onClick={onMarkAllRead}
+          disabled={!canMarkAllRead}
           style={{
             ...styles.iconBtn,
             border: "1px solid #2d2d2d",
             borderRadius: "999px",
             padding: "6px 10px",
             fontSize: "12px",
+            opacity: canMarkAllRead ? 1 : 0.55,
+            cursor: canMarkAllRead ? "pointer" : "not-allowed",
           }}
         >
           Alle als gelesen markieren
         </button>
       </div>
+      {showUndoMarkAll && (
+        <div
+          style={{
+            border: "1px solid #3a2f66",
+            borderRadius: "10px",
+            padding: "10px 12px",
+            marginBottom: "10px",
+            background: "rgba(39, 28, 71, 0.42)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "10px",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: "12px", color: "#d8cdf8" }}>Alle Benachrichtigungen wurden als gelesen markiert.</p>
+          <button
+            type="button"
+            onClick={onUndoMarkAll}
+            style={{
+              ...styles.iconBtn,
+              fontSize: "12px",
+              textDecoration: "underline",
+            }}
+          >
+            Rueckgaengig
+          </button>
+        </div>
+      )}
 
       <h2 style={{ marginTop: 0 }}>Aktivitaet</h2>
       {errorText && (
@@ -1729,6 +1764,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
   const [notificationsErrorText, setNotificationsErrorText] = useState("");
+  const [showUndoMarkAll, setShowUndoMarkAll] = useState(false);
   const [commentsByPostId, setCommentsByPostId] = useState({});
   const [commentsLoadingByPostId, setCommentsLoadingByPostId] = useState({});
   const [commentSubmittingByPostId, setCommentSubmittingByPostId] = useState({});
@@ -1747,6 +1783,8 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const expandedCommentsPostIdRef = useRef(expandedCommentsPostId);
   const commentInputByPostIdRef = useRef(commentInputByPostId);
   const commentErrorByPostIdRef = useRef(commentErrorByPostId);
+  const pendingMarkAllUndoRef = useRef(null);
+  const pendingMarkAllTimerRef = useRef(null);
 
   useEffect(() => {
     likesRef.current = likes;
@@ -1767,6 +1805,16 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   useEffect(() => {
     commentErrorByPostIdRef.current = commentErrorByPostId;
   }, [commentErrorByPostId]);
+
+  useEffect(
+    () => () => {
+      if (pendingMarkAllTimerRef.current !== null) {
+        window.clearTimeout(pendingMarkAllTimerRef.current);
+        pendingMarkAllTimerRef.current = null;
+      }
+    },
+    [],
+  );
 
   const loadFeed = useCallback(async () => {
     setIsFeedLoading(true);
@@ -1941,19 +1989,53 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   }, [apiClient]);
 
   const markAllNotificationsRead = async () => {
+    if (pendingMarkAllTimerRef.current !== null) {
+      window.clearTimeout(pendingMarkAllTimerRef.current);
+      pendingMarkAllTimerRef.current = null;
+    }
+    if (unreadNotificationsCount <= 0) {
+      return;
+    }
     const previousNotifications = notifications;
     const previousUnreadCount = unreadNotificationsCount;
+    const snapshot = {
+      notifications: previousNotifications,
+      unreadCount: previousUnreadCount,
+    };
+    pendingMarkAllUndoRef.current = snapshot;
     setNotifications((previous) => previous.map((notification) => ({ ...notification, read: true })));
     setUnreadNotificationsCount(0);
     setNotificationsErrorText("");
-    try {
-      await apiClient.markAllNotificationsRead();
-    } catch (error) {
-      setNotifications(previousNotifications);
-      setUnreadNotificationsCount(previousUnreadCount);
-      setNotificationsErrorText(error.message || "Benachrichtigungen konnten nicht aktualisiert werden.");
-    }
+    setShowUndoMarkAll(true);
+    pendingMarkAllTimerRef.current = window.setTimeout(async () => {
+      pendingMarkAllTimerRef.current = null;
+      setShowUndoMarkAll(false);
+      pendingMarkAllUndoRef.current = null;
+      try {
+        await apiClient.markAllNotificationsRead();
+      } catch (error) {
+        setNotifications(snapshot.notifications);
+        setUnreadNotificationsCount(snapshot.unreadCount);
+        setNotificationsErrorText(error.message || "Benachrichtigungen konnten nicht aktualisiert werden.");
+      }
+    }, MARK_ALL_UNDO_WINDOW_MS);
   };
+
+  const undoMarkAllNotificationsRead = useCallback(() => {
+    const snapshot = pendingMarkAllUndoRef.current;
+    if (!snapshot) {
+      return;
+    }
+    if (pendingMarkAllTimerRef.current !== null) {
+      window.clearTimeout(pendingMarkAllTimerRef.current);
+      pendingMarkAllTimerRef.current = null;
+    }
+    pendingMarkAllUndoRef.current = null;
+    setShowUndoMarkAll(false);
+    setNotifications(snapshot.notifications);
+    setUnreadNotificationsCount(snapshot.unreadCount);
+    setNotificationsErrorText("");
+  }, []);
 
   const markNotificationRead = async (notificationId) => {
     const previousNotifications = notifications;
@@ -2154,6 +2236,9 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
           errorText={notificationsErrorText}
           onReload={loadNotifications}
           onMarkAllRead={markAllNotificationsRead}
+          canMarkAllRead={unreadNotificationsCount > 0}
+          showUndoMarkAll={showUndoMarkAll}
+          onUndoMarkAll={undoMarkAllNotificationsRead}
           onMarkRead={markNotificationRead}
           onOpenPost={openPostFromNotification}
           onBack={() => setCurrent("feed")}

@@ -609,3 +609,39 @@ test("supports manual feed refresh", async () => {
     expect(global.fetch).toHaveBeenCalledWith("/api/feed", expect.any(Object));
   });
 });
+
+test("allows undo after mark all notifications as read", async () => {
+  notificationsByUserId["u-bingi"] = [
+    {
+      id: 9010,
+      type: "comment",
+      postId: 1,
+      actorId: "u-pluesch",
+      actorName: "Pluesch",
+      actorAvatar: "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch",
+      text: "Pluesch hat kommentiert: \"Starke Farben!\"",
+      read: false,
+      createdAt: Date.now() - 30_000,
+    },
+  ];
+
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  fireEvent.click(await screen.findByRole("button", { name: /Aktivitaet/ }));
+  expect(await screen.findByRole("button", { name: "Als gelesen markieren" })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Alle als gelesen markieren" }));
+  expect(await screen.findByRole("button", { name: "Rueckgaengig" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Als gelesen markieren" })).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Rueckgaengig" }));
+  expect(await screen.findByRole("button", { name: "Als gelesen markieren" })).toBeInTheDocument();
+});
