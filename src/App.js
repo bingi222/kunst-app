@@ -179,10 +179,10 @@ function createApiClient(token) {
         method: "POST",
         body: JSON.stringify(payload),
       }),
-    toggleLike: (postId) =>
+    toggleLike: (postId, liked) =>
       request(`/api/feed/likes/${postId}`, {
         method: "PUT",
-        body: JSON.stringify({ liked: true }),
+        body: JSON.stringify({ liked }),
       }),
   };
 }
@@ -1263,7 +1263,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     setLikes(optimisticLikes);
     setFeedErrorText("");
     try {
-      const response = await apiClient.toggleLike(postId);
+      const response = await apiClient.toggleLike(postId, !previousValue);
       if (typeof response?.liked === "boolean") {
         setLikes((previous) => ({ ...previous, [postId]: response.liked }));
       }

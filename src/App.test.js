@@ -251,3 +251,26 @@ test("shows password strength in register mode", () => {
 
   expect(screen.getByText(/Passwortstaerke:/)).toBeInTheDocument();
 });
+
+test("allows unliking a previously liked post", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  await screen.findByRole("button", { name: "Home" });
+
+  fireEvent.click(screen.getByRole("button", { name: "Nur Likes" }));
+
+  expect(await screen.findByText("Bingi")).toBeInTheDocument();
+
+  const likeButtons = screen.getAllByRole("button", { name: "Like umschalten" });
+  fireEvent.click(likeButtons[0]);
+
+  expect(await screen.findByText("Keine Inhalte fuer diesen Filter gefunden.")).toBeInTheDocument();
+});
