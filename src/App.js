@@ -1567,6 +1567,7 @@ export default function App() {
           onLogout={logout}
           onUpdateProfile={handleProfileUpdate}
           onChangePassword={handlePasswordChange}
+          apiClient={apiClient}
         />
       ) : (
         <AuthScreen onLogin={handleLogin} onRegister={handleRegister} />
