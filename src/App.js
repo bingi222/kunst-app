@@ -647,8 +647,9 @@ function CommentPanel({
               />
               <div style={{ minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.35 }}>
-                  <strong>{comment.userName}</strong> {comment.text}
+                  <strong>{comment.userName}</strong>
                 </p>
+                <p style={{ margin: "2px 0 0", fontSize: "13px", lineHeight: 1.35 }}>{comment.text}</p>
                 <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#8f8f8f" }}>
                   {formatRelativeTime(comment.createdAt)}
                 </p>
