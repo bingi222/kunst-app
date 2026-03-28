@@ -663,7 +663,7 @@ function BottomNav({ current, setCurrent, onOpenOwnProfile, unreadNotificationsC
   );
 }
 
-function Activity({ notifications, isLoading, errorText, onMarkAllRead, onMarkRead, onBack }) {
+function Activity({ notifications, isLoading, errorText, onMarkAllRead, onMarkRead, onOpenPost, onBack }) {
   const unreadCount = notifications.filter((notification) => !notification.read).length;
 
   return (
@@ -741,11 +741,30 @@ function Activity({ notifications, isLoading, errorText, onMarkAllRead, onMarkRe
               }}
             >
               <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.4 }}>
-                <strong>{notification.actorName}</strong> {notification.message}
+                <strong>{notification.actorName}</strong> {notification.message || notification.text || ""}
               </p>
               <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#8f8f8f" }}>
                 {formatRelativeTime(notification.createdAt)}
               </p>
+              {Number.isFinite(Number(notification.postId)) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onOpenPost) {
+                      onOpenPost(notification);
+                    }
+                  }}
+                  style={{
+                    ...styles.iconBtn,
+                    marginTop: "8px",
+                    marginRight: "10px",
+                    fontSize: "12px",
+                    textDecoration: "underline",
+                  }}
+                >
+                  Zum Beitrag
+                </button>
+              )}
               {!notification.read && (
                 <button
                   type="button"
@@ -881,6 +900,8 @@ function Post({
   onProfile,
   liked,
   toggleLike,
+  postRef,
+  isHighlighted,
   comments,
   commentCount,
   isCommentsOpen,
@@ -892,8 +913,22 @@ function Post({
   isCommentSubmitting,
   commentErrorText,
 }) {
+  const commentsAriaLabel = isHighlighted
+    ? `${isCommentsOpen ? "Kommentare ausblenden" : "Kommentare anzeigen"} (Ausgewahlter Beitrag)`
+    : isCommentsOpen
+      ? "Kommentare ausblenden"
+      : "Kommentare anzeigen";
+
   return (
-    <article style={styles.card}>
+    <article
+      ref={postRef}
+      data-testid={`post-${post.id}`}
+      style={{
+        ...styles.card,
+        border: isHighlighted ? "1px solid #4a7dff" : styles.card.border,
+        boxShadow: isHighlighted ? "0 0 0 1px rgba(74, 125, 255, 0.35)" : "none",
+      }}
+    >
       <button
         type="button"
         onClick={() => onProfile(post)}
@@ -928,7 +963,7 @@ function Post({
           type="button"
           onClick={onToggleComments}
           style={styles.iconBtn}
-          aria-label={isCommentsOpen ? "Kommentare ausblenden" : "Kommentare anzeigen"}
+          aria-label={commentsAriaLabel}
         >
           <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
             <CommentIcon />
@@ -1558,6 +1593,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const [commentErrorByPostId, setCommentErrorByPostId] = useState({});
   const [commentInputByPostId, setCommentInputByPostId] = useState({});
   const [expandedCommentsPostId, setExpandedCommentsPostId] = useState(null);
+  const [highlightedPostId, setHighlightedPostId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [feedMode, setFeedMode] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
@@ -1751,6 +1787,23 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     }
   };
 
+  const openPostFromNotification = async (notification) => {
+    const targetPostId = Number(notification?.postId);
+    if (!Number.isFinite(targetPostId)) {
+      return;
+    }
+
+    setCurrent("feed");
+    setSearchQuery("");
+    setFeedMode("all");
+    setSortOrder("newest");
+    setHighlightedPostId(targetPostId);
+
+    if (notification?.id && !notification.read) {
+      await markNotificationRead(notification.id);
+    }
+  };
+
   useEffect(() => {
     loadFeed();
     loadNotifications();
@@ -1780,6 +1833,27 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
 
     return nextPosts;
   }, [posts, likes, searchQuery, feedMode, sortOrder]);
+
+  useEffect(() => {
+    if (current !== "feed" || highlightedPostId === null) {
+      return undefined;
+    }
+
+    const scrollTimer = window.setTimeout(() => {
+      const targetPost = document.querySelector(`[data-testid="post-${highlightedPostId}"]`);
+      if (targetPost && typeof targetPost.scrollIntoView === "function") {
+        targetPost.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 60);
+    const clearTimer = window.setTimeout(() => {
+      setHighlightedPostId(null);
+    }, 2600);
+
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [current, highlightedPostId, visiblePosts.length]);
 
   return (
     <div style={styles.app}>
@@ -1842,6 +1916,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
                 toggleLike={() => {
                   toggleLike(post.id);
                 }}
+                isHighlighted={Number(post.id) === Number(highlightedPostId)}
                 comments={commentsByPostId[post.id] || []}
                 commentCount={Array.isArray(commentsByPostId[post.id]) ? commentsByPostId[post.id].length : Number(post.commentCount) || 0}
                 isCommentsOpen={expandedCommentsPostId === post.id}
@@ -1874,6 +1949,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
           errorText={notificationsErrorText}
           onMarkAllRead={markAllNotificationsRead}
           onMarkRead={markNotificationRead}
+          onOpenPost={openPostFromNotification}
           onBack={() => setCurrent("feed")}
         />
       )}

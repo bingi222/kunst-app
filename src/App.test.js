@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import App from "./App";
 
 let mockUser;
@@ -473,4 +473,41 @@ test("shows notifications badge and marks all as read", async () => {
 
   fireEvent.click(screen.getByRole("button", { name: "Alle als gelesen markieren" }));
   expect(await screen.findByText("Keine ungelesenen Benachrichtigungen.")).toBeInTheDocument();
+});
+
+test("opens related post from activity notification", async () => {
+  notificationsByUserId["u-bingi"] = [
+    {
+      id: 9002,
+      type: "comment",
+      postId: 1,
+      actorId: "u-pluesch",
+      actorName: "Pluesch",
+      actorAvatar: "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch",
+      text: "Pluesch hat kommentiert: \"Starke Farben!\"",
+      read: false,
+      createdAt: Date.now() - 10_000,
+    },
+  ];
+
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const activityButton = await screen.findByRole("button", { name: /Aktivitaet/ });
+  fireEvent.click(activityButton);
+
+  const notifButton = await screen.findByRole("button", { name: "Zum Beitrag" });
+  fireEvent.click(notifButton);
+
+  const targetPostButton = await screen.findByRole("button", {
+    name: /Kommentare anzeigen \(Ausgewahlter Beitrag\)/,
+  });
+  expect(targetPostButton).toBeInTheDocument();
 });
