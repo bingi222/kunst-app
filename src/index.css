@@ -35,6 +35,7 @@ body {
   color: #f3f4f6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
 }
 
 button,
@@ -152,25 +153,42 @@ button:focus-visible,
 .artwork-thumb {
   position: relative;
   overflow: hidden;
+  border-radius: 18px;
+  background: #0f1623;
+  transform: translateZ(0);
 }
 
-.artwork-thumb img {
-  transition: transform 320ms ease, opacity 280ms ease;
+.artwork-thumb img,
+.artwork-image {
+  display: block;
+  transition:
+    transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 340ms ease;
+  will-change: transform, opacity;
+  opacity: 0.58;
 }
 
 .artwork-thumb .artwork-overlay {
   opacity: 0;
-  transition: opacity 260ms ease;
+  transition: opacity 320ms ease;
+}
+
+.artwork-thumb.is-loaded img,
+.artwork-thumb.is-loaded .artwork-image {
+  opacity: 1;
 }
 
 .artwork-thumb:hover img,
-.artwork-thumb:focus-within img {
-  transform: scale(1.045);
+.artwork-thumb:focus-within img,
+.artwork-thumb:hover .artwork-image,
+.artwork-thumb:focus-within .artwork-image {
+  transform: scale(1.06);
 }
 
 .artwork-thumb:hover .artwork-overlay,
 .artwork-thumb:focus-within .artwork-overlay {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .fade-in {

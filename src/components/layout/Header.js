@@ -2,16 +2,18 @@ import React, { useEffect, useRef, useState } from "react";
 
 function navBtnStyle(isActive) {
   return {
-    height: 34,
+    height: 36,
     borderRadius: "999px",
-    border: "1px solid #2b313d",
-    background: isActive ? "#222a39" : "transparent",
-    color: "#e5e7eb",
-    padding: "0 12px",
-    fontSize: "13px",
-    fontWeight: isActive ? 700 : 600,
+    border: isActive ? "1px solid rgba(255, 255, 255, 0.2)" : "1px solid transparent",
+    background: isActive ? "rgba(255, 255, 255, 0.1)" : "transparent",
+    color: "#e8ecf3",
+    padding: "0 13px",
+    fontSize: "12px",
+    letterSpacing: "0.03em",
+    textTransform: "uppercase",
+    fontWeight: 600,
     cursor: "pointer",
-    transition: "background-color 180ms ease, border-color 180ms ease, transform 180ms ease",
+    transition: "background-color 220ms ease, border-color 220ms ease, color 220ms ease",
   };
 }
 
@@ -60,26 +62,35 @@ export default function Header({
       style={{
         position: "sticky",
         top: 0,
-        background: "rgba(15, 17, 21, 0.84)",
-        backdropFilter: "blur(16px)",
-        padding: "12px 16px",
-        borderBottom: "1px solid #252b36",
-        zIndex: 10,
+        background: "rgba(10, 13, 20, 0.58)",
+        backdropFilter: "blur(18px)",
+        WebkitBackdropFilter: "blur(18px)",
+        padding: "18px 26px",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+        zIndex: 30,
       }}
     >
       <div
         style={{
-          maxWidth: 1200,
+          maxWidth: 1360,
           margin: "0 auto",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: "12px",
+          gap: "24px",
         }}
       >
-        <b>{title}</b>
+        <b style={{ fontSize: "14px", letterSpacing: "0.24em", fontWeight: 600 }}>{title}</b>
 
-        <nav style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px", justifyContent: "center" }}>
+        <nav
+          style={{
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "10px",
+            justifyContent: "center",
+          }}
+        >
           <button type="button" onClick={onGoFeed} style={navBtnStyle(currentTab === "feed")}>
             Home
           </button>
@@ -97,14 +108,18 @@ export default function Header({
             onClick={() => setIsMenuOpen((previous) => !previous)}
             style={{
               ...navBtnStyle(false),
-              minWidth: "40px",
-              width: "40px",
-              height: "40px",
+              minWidth: "36px",
+              width: "36px",
+              height: "36px",
               padding: 0,
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              fontWeight: 700,
+              textTransform: "none",
+              letterSpacing: "normal",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              background: "rgba(255, 255, 255, 0.06)",
+              fontWeight: 600,
             }}
             aria-label={isMenuOpen ? "Benutzermenue schliessen" : "Benutzermenue oeffnen"}
           >
@@ -118,10 +133,12 @@ export default function Header({
                 right: 0,
                 top: "calc(100% + 8px)",
                 minWidth: "220px",
-                borderRadius: "14px",
-                border: "1px solid #2b313d",
-                background: "#141a25",
-                boxShadow: "0 10px 36px rgba(0, 0, 0, 0.38)",
+                borderRadius: "16px",
+                border: "1px solid rgba(255, 255, 255, 0.14)",
+                background: "rgba(12, 16, 24, 0.92)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                boxShadow: "0 14px 40px rgba(0, 0, 0, 0.42)",
                 padding: "10px",
                 zIndex: 40,
               }}

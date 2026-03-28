@@ -492,7 +492,7 @@ test("loads and submits comments for a post", async () => {
   expect(await screen.findByText("Mega nice!")).toBeInTheDocument();
 });
 
-test("shows comment count immediately in feed", async () => {
+test("shows icon-only comment interaction in feed", async () => {
   render(<App />);
 
   fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
@@ -505,8 +505,8 @@ test("shows comment count immediately in feed", async () => {
 
   await screen.findByRole("button", { name: "Home" });
   const commentButtons = await screen.findAllByRole("button", { name: "Kommentare anzeigen" });
-  const hasVisibleCountOne = commentButtons.some((button) => (button.textContent || "").includes("1"));
-  expect(hasVisibleCountOne).toBe(true);
+  expect(commentButtons.length).toBeGreaterThan(0);
+  expect(commentButtons.every((button) => (button.textContent || "").trim() === "")).toBe(true);
 });
 
 test("shows notifications badge and marks all as read", async () => {

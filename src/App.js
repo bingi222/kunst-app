@@ -32,18 +32,18 @@ const TOKENS = {
 
 const styles = {
   app: {
-    background: "#0d1118",
+    background: "#0b1018",
     color: "#f3f4f6",
     minHeight: "100vh",
     paddingBottom: "24px",
   },
   card: {
-    marginBottom: TOKENS.spacing.lg,
-    border: "1px solid #232833",
-    borderRadius: TOKENS.radius.md,
+    marginBottom: 0,
+    border: "1px solid #1f2632",
+    borderRadius: "18px",
     overflow: "hidden",
-    background: "#121722",
-    boxShadow: TOKENS.elevation.card,
+    background: "#0e1420",
+    boxShadow: "0 14px 44px rgba(0, 0, 0, 0.4)",
   },
   imageGrid: {
     display: "grid",
@@ -52,10 +52,11 @@ const styles = {
   },
   image: {
     width: "100%",
-    height: "460px",
+    height: "500px",
     objectFit: "cover",
     background: "#1b1f29",
-    transition: "transform 220ms ease",
+    transition: "transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 320ms ease",
+    opacity: 0.58,
   },
   iconBtn: {
     background: "transparent",
@@ -837,7 +838,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
       />
 
       {current === "feed" && (
-        <main style={{ maxWidth: 1220, margin: "0 auto", padding: "28px 20px 40px" }}>
+        <main style={{ maxWidth: 1440, margin: "0 auto", padding: "34px 30px 52px" }}>
           <FeedToolbar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -892,8 +893,9 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
-                gap: "28px",
+                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                gap: "22px",
+                alignItems: "start",
               }}
             >
               {visiblePosts.map((post) => (
