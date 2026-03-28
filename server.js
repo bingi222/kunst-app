@@ -325,6 +325,52 @@ app.put("/api/feed/likes/:postId", (req, res) => {
   return res.json({ likes });
 });
 
+app.post("/api/posts", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const imageUrl = String(req.body?.imageUrl || "").trim();
+  if (!imageUrl) {
+    return res.status(400).json({ error: "Bild-URL darf nicht leer sein." });
+  }
+
+  const createdPost = {
+    id: Date.now(),
+    ownerId: user.id,
+    user: user.displayName,
+    bio: user.bio,
+    avatar: user.avatar,
+    images: [imageUrl],
+  };
+
+  posts.unshift(createdPost);
+  return res.status(201).json({ post: toPostPayload(createdPost) });
+});
+
+app.post("/api/posts/:postId/like", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const postId = Number(req.params.postId);
+  if (!Number.isFinite(postId)) {
+    return res.status(400).json({ error: "Ungueltige Post-ID." });
+  }
+
+  const postExists = posts.some((post) => Number(post.id) === postId);
+  if (!postExists) {
+    return res.status(404).json({ error: "Post nicht gefunden." });
+  }
+
+  const likes = getUserLikes(user.id);
+  likes[postId] = !Boolean(likes[postId]);
+
+  return res.json({ liked: likes[postId], likes });
+});
+
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`KUNST API listening on http://localhost:${PORT}`);

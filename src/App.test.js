@@ -109,14 +109,18 @@ beforeEach(() => {
       return createJsonResponse(200, { ok: true });
     }
 
-    if (endpoint === "/api/posts" && method === "GET") {
+    if (endpoint === "/api/feed" && method === "GET") {
       if (!isAuthorized) {
         return createJsonResponse(401, { message: "Nicht autorisiert." });
       }
-      return createJsonResponse(200, { posts: mockPosts });
+      const likes = {};
+      Array.from(likedPostIds).forEach((id) => {
+        likes[id] = true;
+      });
+      return createJsonResponse(200, { posts: mockPosts, likes });
     }
 
-    if (endpoint === "/api/posts" && method === "POST") {
+    if (endpoint === "/api/feed/posts" && method === "POST") {
       if (!isAuthorized) {
         return createJsonResponse(401, { message: "Nicht autorisiert." });
       }
@@ -137,31 +141,25 @@ beforeEach(() => {
       return createJsonResponse(201, { post: createdPost });
     }
 
-    if (endpoint === "/api/likes" && method === "GET") {
+    if (endpoint.startsWith("/api/feed/likes/") && method === "PUT") {
       if (!isAuthorized) {
         return createJsonResponse(401, { message: "Nicht autorisiert." });
+      }
+      const postId = Number(endpoint.split("/").pop());
+      if (!postId) {
+        return createJsonResponse(400, { message: "Ungueltige Post-ID." });
+      }
+
+      if (body.liked) {
+        likedPostIds.add(postId);
+      } else {
+        likedPostIds.delete(postId);
       }
       const likes = {};
       Array.from(likedPostIds).forEach((id) => {
         likes[id] = true;
       });
       return createJsonResponse(200, { likes });
-    }
-
-    if (endpoint === "/api/likes/toggle" && method === "POST") {
-      if (!isAuthorized) {
-        return createJsonResponse(401, { message: "Nicht autorisiert." });
-      }
-      const postId = Number(body.postId);
-      if (!postId) {
-        return createJsonResponse(400, { message: "Ungueltige Post-ID." });
-      }
-      if (likedPostIds.has(postId)) {
-        likedPostIds.delete(postId);
-      } else {
-        likedPostIds.add(postId);
-      }
-      return createJsonResponse(200, { liked: likedPostIds.has(postId) });
     }
 
     return createJsonResponse(404, { message: "Not found" });

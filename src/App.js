@@ -175,13 +175,14 @@ function createApiClient(token) {
       }),
     getFeed: () => request("/api/feed"),
     createPost: (payload) =>
-      request("/api/posts", {
+      request("/api/feed/posts", {
         method: "POST",
         body: JSON.stringify(payload),
       }),
     toggleLike: (postId) =>
-      request(`/api/posts/${postId}/like`, {
-        method: "POST",
+      request(`/api/feed/likes/${postId}`, {
+        method: "PUT",
+        body: JSON.stringify({ liked: true }),
       }),
   };
 }
