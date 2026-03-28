@@ -3,18 +3,19 @@ import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useSt
 
 const styles = {
   app: {
-    background: "radial-gradient(circle at 20% 0%, #25143f 0%, #0d0d14 42%, #06060a 100%)",
+    background:
+      "radial-gradient(circle at 15% 0%, #3f1f6f 0%, #161426 35%, #090910 66%), radial-gradient(circle at 92% 4%, rgba(0, 245, 255, 0.14) 0%, rgba(0, 0, 0, 0) 40%)",
     color: "#f6f2ff",
     minHeight: "100vh",
     paddingBottom: "90px",
   },
   card: {
     marginBottom: "20px",
-    border: "1px solid #34275e",
+    border: "1px solid #4f3293",
     borderRadius: "16px",
     overflow: "hidden",
-    background: "linear-gradient(145deg, #171328 0%, #0f1019 100%)",
-    boxShadow: "0 10px 28px rgba(0, 0, 0, 0.45)",
+    background: "linear-gradient(145deg, #1a1430 0%, #0d101c 100%)",
+    boxShadow: "0 0 0 1px rgba(186, 120, 255, 0.15), 0 14px 30px rgba(0, 0, 0, 0.48)",
   },
   imageGrid: {
     display: "grid",
@@ -30,12 +31,12 @@ const styles = {
   iconBtn: {
     background: "transparent",
     border: "none",
-    color: "#f2ebff",
+    color: "#f7f1ff",
     cursor: "pointer",
     fontSize: "19px",
     padding: 0,
     fontFamily: "inherit",
-    transition: "all 160ms ease",
+    transition: "transform 140ms ease, filter 140ms ease, box-shadow 140ms ease",
   },
   nav: {
     position: "fixed",
@@ -43,10 +44,11 @@ const styles = {
     transform: "translateX(-50%)",
     bottom: "14px",
     width: "min(94vw, 700px)",
-    background: "rgba(15, 15, 24, 0.86)",
-    border: "1px solid #3a2f66",
+    background: "rgba(12, 10, 24, 0.9)",
+    border: "1px solid #4f39a0",
     borderRadius: "999px",
-    boxShadow: "0 0 0 1px rgba(176, 125, 255, 0.2), 0 16px 30px rgba(0, 0, 0, 0.5)",
+    boxShadow:
+      "0 0 0 1px rgba(176, 125, 255, 0.3), 0 0 22px rgba(176, 125, 255, 0.23), 0 14px 28px rgba(0, 0, 0, 0.52)",
     backdropFilter: "blur(10px)",
     display: "flex",
     justifyContent: "space-around",
