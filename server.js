@@ -1,0 +1,202 @@
+const express = require("express");
+const cors = require("cors");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+const app = express();
+const PORT = process.env.PORT || 4000;
+const JWT_SECRET = process.env.JWT_SECRET || "kunst-dev-secret-change-me";
+
+app.use(cors());
+app.use(express.json({ limit: "3mb" }));
+
+const users = [
+  {
+    id: "u-bingi",
+    username: "bingi",
+    passwordHash: bcrypt.hashSync("kunst123", 10),
+    displayName: "Bingi",
+    bio: "Digital minimal art",
+    avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Bingi",
+  },
+  {
+    id: "u-pluesch",
+    username: "pluesch",
+    passwordHash: bcrypt.hashSync("kunst123", 10),
+    displayName: "Pluesch",
+    bio: "Abstract emotions",
+    avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch",
+  },
+  {
+    id: "u-giream",
+    username: "giream",
+    passwordHash: bcrypt.hashSync("kunst123", 10),
+    displayName: "Giream",
+    bio: "Visual storytelling",
+    avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Giream",
+  },
+];
+
+function normalizeUsername(username) {
+  return String(username || "")
+    .trim()
+    .toLowerCase();
+}
+
+function toPublicUser(user) {
+  return {
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    bio: user.bio,
+    avatar: user.avatar,
+  };
+}
+
+function signToken(user) {
+  return jwt.sign({ sub: user.id, username: user.username }, JWT_SECRET, {
+    expiresIn: "7d",
+  });
+}
+
+function getUserFromAuthHeader(req) {
+  const auth = req.headers.authorization || "";
+  if (!auth.startsWith("Bearer ")) {
+    return null;
+  }
+
+  const token = auth.slice(7);
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    return users.find((user) => user.id === payload.sub) || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+app.get("/api/health", (req, res) => {
+  res.json({ ok: true });
+});
+
+app.post("/api/auth/register", async (req, res) => {
+  const username = normalizeUsername(req.body?.username);
+  const password = String(req.body?.password || "").trim();
+  const displayName = String(req.body?.displayName || "").trim() || username;
+
+  if (!username) {
+    return res.status(400).json({ error: "Bitte einen Username eingeben." });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: "Passwort muss mindestens 6 Zeichen haben." });
+  }
+  if (users.some((user) => user.username === username)) {
+    return res.status(409).json({ error: "Username ist bereits vergeben." });
+  }
+
+  const createdUser = {
+    id: `u-${Date.now()}`,
+    username,
+    passwordHash: await bcrypt.hash(password, 10),
+    displayName,
+    bio: "Neues Mitglied bei KUNST",
+    avatar: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(displayName)}`,
+  };
+
+  users.unshift(createdUser);
+
+  return res.status(201).json({
+    token: signToken(createdUser),
+    user: toPublicUser(createdUser),
+  });
+});
+
+app.post("/api/auth/login", async (req, res) => {
+  const username = normalizeUsername(req.body?.username);
+  const password = String(req.body?.password || "").trim();
+
+  if (!username || !password) {
+    return res.status(400).json({ error: "Bitte Username und Passwort eingeben." });
+  }
+
+  const user = users.find((item) => item.username === username);
+  if (!user) {
+    return res.status(401).json({ error: "Login fehlgeschlagen. Bitte Daten pruefen." });
+  }
+
+  const matches = await bcrypt.compare(password, user.passwordHash);
+  if (!matches) {
+    return res.status(401).json({ error: "Login fehlgeschlagen. Bitte Daten pruefen." });
+  }
+
+  return res.json({
+    token: signToken(user),
+    user: toPublicUser(user),
+  });
+});
+
+app.get("/api/auth/me", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+  return res.json({ user: toPublicUser(user) });
+});
+
+app.put("/api/auth/profile", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const displayName = String(req.body?.displayName || "").trim();
+  const bio = String(req.body?.bio || "").trim();
+  const avatar = String(req.body?.avatar || "").trim();
+
+  if (displayName.length < 2) {
+    return res.status(400).json({ error: "Anzeigename muss mindestens 2 Zeichen haben." });
+  }
+
+  user.displayName = displayName;
+  user.bio = bio;
+  user.avatar =
+    avatar || `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(displayName)}`;
+
+  return res.json({ user: toPublicUser(user) });
+});
+
+app.put("/api/auth/password", async (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const currentPassword = String(req.body?.currentPassword || "").trim();
+  const newPassword = String(req.body?.newPassword || "").trim();
+  const confirmPassword = String(req.body?.confirmPassword || "").trim();
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return res.status(400).json({ error: "Bitte alle Passwort-Felder ausfuellen." });
+  }
+
+  const matches = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!matches) {
+    return res.status(400).json({ error: "Aktuelles Passwort ist nicht korrekt." });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: "Neues Passwort muss mindestens 6 Zeichen haben." });
+  }
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ error: "Neues Passwort und Bestaetigung stimmen nicht ueberein." });
+  }
+  if (newPassword === currentPassword) {
+    return res.status(400).json({ error: "Neues Passwort muss sich vom alten unterscheiden." });
+  }
+
+  user.passwordHash = await bcrypt.hash(newPassword, 10);
+  return res.json({ ok: true });
+});
+
+app.listen(PORT, () => {
+  // eslint-disable-next-line no-console
+  console.log(`KUNST API listening on http://localhost:${PORT}`);
+});

@@ -4,33 +4,6 @@ const AVATAR_BINGI = "https://api.dicebear.com/9.x/initials/svg?seed=Bingi";
 const AVATAR_PLUESCH = "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch";
 const AVATAR_GIREAM = "https://api.dicebear.com/9.x/initials/svg?seed=Giream";
 
-const DEFAULT_USERS = [
-  {
-    id: "u-bingi",
-    username: "bingi",
-    password: "kunst123",
-    displayName: "Bingi",
-    bio: "Digital minimal art",
-    avatar: AVATAR_BINGI,
-  },
-  {
-    id: "u-pluesch",
-    username: "pluesch",
-    password: "kunst123",
-    displayName: "Pluesch",
-    bio: "Abstract emotions",
-    avatar: AVATAR_PLUESCH,
-  },
-  {
-    id: "u-giream",
-    username: "giream",
-    password: "kunst123",
-    displayName: "Giream",
-    bio: "Visual storytelling",
-    avatar: AVATAR_GIREAM,
-  },
-];
-
 const initialPosts = [
   {
     id: 1,
@@ -118,8 +91,8 @@ const styles = {
 
 const STORAGE_POSTS_KEY = "kunst-app.posts.v1";
 const STORAGE_LIKES_KEY = "kunst-app.likes.v1";
-const STORAGE_USERS_KEY = "kunst-app.users.v1";
-const STORAGE_SESSION_KEY = "kunst-app.session.v1";
+const STORAGE_AUTH_TOKEN_KEY = "kunst-app.auth.token.v1";
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 function readStorage(key, fallbackValue) {
   if (typeof window === "undefined") {
@@ -199,6 +172,54 @@ function getPasswordStrength(value) {
   return { label: "Stark", color: "#9aff9a" };
 }
 
+function createApiClient(token) {
+  const request = async (path, options = {}) => {
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+    });
+
+    const responseBody = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = responseBody?.message || "Serverfehler";
+      throw new Error(message);
+    }
+    return responseBody;
+  };
+
+  return {
+    register: (payload) =>
+      request("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    login: (payload) =>
+      request("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    me: () => request("/api/auth/me"),
+    updateProfile: (payload) =>
+      request("/api/auth/profile", {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+    changePassword: (payload) =>
+      request("/api/auth/password", {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+  };
+}
+
 class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -238,10 +259,10 @@ function AuthScreen({ onLogin, onRegister }) {
   const isRegister = mode === "register";
   const registerPasswordStrength = useMemo(() => getPasswordStrength(password), [password]);
 
-  const submitAuth = (event) => {
+  const submitAuth = async (event) => {
     event.preventDefault();
     const payload = { username, password, displayName };
-    const error = isRegister ? onRegister(payload) : onLogin(payload);
+    const error = await (isRegister ? onRegister(payload) : onLogin(payload));
     if (error) {
       setErrorText(error);
       return;
@@ -822,7 +843,7 @@ function Profile({ data, onBack, isOwnProfile, onSaveProfile, onChangePassword }
 
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               if (!canSaveOwnProfile) {
                 return;
               }
@@ -830,7 +851,7 @@ function Profile({ data, onBack, isOwnProfile, onSaveProfile, onChangePassword }
               const nextName = displayName.trim();
               const nextBio = bio.trim();
               const nextAvatar = avatar.trim() || createAvatarFromName(nextName);
-              const error = onSaveProfile({
+              const error = await onSaveProfile({
                 displayName: nextName,
                 bio: nextBio,
                 avatar: nextAvatar,
@@ -1003,8 +1024,8 @@ function Profile({ data, onBack, isOwnProfile, onSaveProfile, onChangePassword }
 
           <button
             type="button"
-            onClick={() => {
-              const error = onChangePassword({
+            onClick={async () => {
+              const error = await onChangePassword({
                 currentPassword,
                 newPassword,
                 confirmPassword,
@@ -1291,8 +1312,8 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword }
         <Profile
           data={activeProfile}
           isOwnProfile={Boolean(activeProfile?.isOwnProfile)}
-          onSaveProfile={(profilePatch) => {
-            const error = onUpdateProfile(profilePatch);
+          onSaveProfile={async (profilePatch) => {
+            const error = await onUpdateProfile(profilePatch);
             if (error) {
               return error;
             }
@@ -1351,29 +1372,52 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword }
 }
 
 export default function App() {
-  const [users, setUsers] = useState(() => {
-    const storedUsers = readStorage(STORAGE_USERS_KEY, DEFAULT_USERS);
-    if (!Array.isArray(storedUsers) || storedUsers.length === 0) {
-      return DEFAULT_USERS;
-    }
-    return storedUsers;
-  });
-  const [sessionUsername, setSessionUsername] = useState(() => readStorage(STORAGE_SESSION_KEY, ""));
-
-  const currentUser = useMemo(
-    () => users.find((user) => user.username === sessionUsername) || null,
-    [users, sessionUsername],
-  );
+  const [authToken, setAuthToken] = useState(() => readStorage(STORAGE_AUTH_TOKEN_KEY, ""));
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+  const apiClient = useMemo(() => createApiClient(authToken), [authToken]);
 
   useEffect(() => {
-    writeStorage(STORAGE_USERS_KEY, users);
-  }, [users]);
+    writeStorage(STORAGE_AUTH_TOKEN_KEY, authToken);
+  }, [authToken]);
 
   useEffect(() => {
-    writeStorage(STORAGE_SESSION_KEY, sessionUsername);
-  }, [sessionUsername]);
+    let cancelled = false;
 
-  const handleLogin = ({ username, password }) => {
+    const loadSession = async () => {
+      if (!authToken) {
+        if (!cancelled) {
+          setCurrentUser(null);
+          setAuthReady(true);
+        }
+        return;
+      }
+
+      setAuthReady(false);
+      try {
+        const response = await apiClient.me();
+        if (!cancelled) {
+          setCurrentUser(response.user);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setCurrentUser(null);
+          setAuthToken("");
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthReady(true);
+        }
+      }
+    };
+
+    loadSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken, apiClient]);
+
+  const handleLogin = async ({ username, password }) => {
     const normalizedUsername = normalizeUsername(username || "");
     const cleanPassword = (password || "").trim();
 
@@ -1381,16 +1425,20 @@ export default function App() {
       return "Bitte Username und Passwort eingeben.";
     }
 
-    const matchedUser = users.find((user) => user.username === normalizedUsername);
-    if (!matchedUser || matchedUser.password !== cleanPassword) {
-      return "Login fehlgeschlagen. Bitte Daten pruefen.";
+    try {
+      const response = await createApiClient().login({
+        username: normalizedUsername,
+        password: cleanPassword,
+      });
+      setAuthToken(response.token);
+      setCurrentUser(response.user);
+      return "";
+    } catch (error) {
+      return error.message || "Login fehlgeschlagen. Bitte Daten pruefen.";
     }
-
-    setSessionUsername(matchedUser.username);
-    return "";
   };
 
-  const handleRegister = ({ username, password, displayName }) => {
+  const handleRegister = async ({ username, password, displayName }) => {
     const normalizedUsername = normalizeUsername(username || "");
     const cleanPassword = (password || "").trim();
     const cleanDisplayName = (displayName || "").trim() || normalizedUsername;
@@ -1401,25 +1449,22 @@ export default function App() {
     if (cleanPassword.length < 6) {
       return "Passwort muss mindestens 6 Zeichen haben.";
     }
-    if (users.some((user) => user.username === normalizedUsername)) {
-      return "Username ist bereits vergeben.";
+
+    try {
+      const response = await createApiClient().register({
+        username: normalizedUsername,
+        password: cleanPassword,
+        displayName: cleanDisplayName,
+      });
+      setAuthToken(response.token);
+      setCurrentUser(response.user);
+      return "";
+    } catch (error) {
+      return error.message || "Registrierung fehlgeschlagen.";
     }
-
-    const createdUser = {
-      id: `u-${Date.now()}`,
-      username: normalizedUsername,
-      password: cleanPassword,
-      displayName: cleanDisplayName,
-      bio: "Neues Mitglied bei KUNST",
-      avatar: createAvatarFromName(cleanDisplayName),
-    };
-
-    setUsers((previous) => [createdUser, ...previous]);
-    setSessionUsername(createdUser.username);
-    return "";
   };
 
-  const handleProfileUpdate = ({ displayName, bio, avatar }) => {
+  const handleProfileUpdate = async ({ displayName, bio, avatar }) => {
     if (!currentUser) {
       return "Du bist nicht eingeloggt.";
     }
@@ -1429,22 +1474,20 @@ export default function App() {
       return "Anzeigename muss mindestens 2 Zeichen haben.";
     }
 
-    setUsers((previousUsers) =>
-      previousUsers.map((user) =>
-        user.id === currentUser.id
-          ? {
-              ...user,
-              displayName: nextDisplayName,
-              bio: (bio || "").trim(),
-              avatar: (avatar || "").trim() || createAvatarFromName(nextDisplayName),
-            }
-          : user,
-      ),
-    );
-    return "";
+    try {
+      const response = await apiClient.updateProfile({
+        displayName: nextDisplayName,
+        bio: (bio || "").trim(),
+        avatar: (avatar || "").trim() || createAvatarFromName(nextDisplayName),
+      });
+      setCurrentUser(response.user);
+      return "";
+    } catch (error) {
+      return error.message || "Profil konnte nicht aktualisiert werden.";
+    }
   };
 
-  const handlePasswordChange = ({ currentPassword, newPassword, confirmPassword }) => {
+  const handlePasswordChange = async ({ currentPassword, newPassword, confirmPassword }) => {
     if (!currentUser) {
       return "Du bist nicht eingeloggt.";
     }
@@ -1456,9 +1499,6 @@ export default function App() {
     if (!currentPasswordValue || !newPasswordValue || !confirmPasswordValue) {
       return "Bitte alle Passwort-Felder ausfuellen.";
     }
-    if (currentPasswordValue !== currentUser.password) {
-      return "Aktuelles Passwort ist nicht korrekt.";
-    }
     if (newPasswordValue.length < 6) {
       return "Neues Passwort muss mindestens 6 Zeichen haben.";
     }
@@ -1469,22 +1509,30 @@ export default function App() {
       return "Neues Passwort muss sich vom alten unterscheiden.";
     }
 
-    setUsers((previousUsers) =>
-      previousUsers.map((user) =>
-        user.id === currentUser.id
-          ? {
-              ...user,
-              password: newPasswordValue,
-            }
-          : user,
-      ),
-    );
-    return "";
+    try {
+      await apiClient.changePassword({
+        currentPassword: currentPasswordValue,
+        newPassword: newPasswordValue,
+        confirmPassword: confirmPasswordValue,
+      });
+      return "";
+    } catch (error) {
+      return error.message || "Passwort konnte nicht aktualisiert werden.";
+    }
   };
 
   const logout = () => {
-    setSessionUsername("");
+    setCurrentUser(null);
+    setAuthToken("");
   };
+
+  if (!authReady) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#000", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p>Session wird geladen...</p>
+      </div>
+    );
+  }
 
   return (
     <AppErrorBoundary>

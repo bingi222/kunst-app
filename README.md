@@ -1,4 +1,50 @@
-# Getting Started with Create React App
+# KUNST App
+
+## Start (Frontend + API)
+
+Das Projekt besteht jetzt aus:
+
+- React Frontend (Port `3000`)
+- Express API fuer Auth/Profile (Port `4000`)
+
+### 1) Abhaengigkeiten installieren
+
+```bash
+npm install
+```
+
+### 2) API starten
+
+```bash
+npm run dev:api
+```
+
+Die API laeuft dann unter `http://localhost:4000`.
+
+### 3) Frontend starten (zweites Terminal)
+
+```bash
+npm start
+```
+
+Das Frontend laeuft unter `http://localhost:3000` und nutzt standardmaessig `http://localhost:4000` als API.
+
+Optional kannst du die API-URL setzen:
+
+```bash
+REACT_APP_API_URL=http://localhost:4000 npm start
+```
+
+---
+
+## Standard Demo-Login
+
+- Username: `bingi`
+- Passwort: `kunst123`
+
+---
+
+## About Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
