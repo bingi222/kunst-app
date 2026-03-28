@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const AVATAR_BINGI = "https://api.dicebear.com/9.x/initials/svg?seed=Bingi";
 const AVATAR_PLUESCH = "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch";
@@ -86,6 +86,37 @@ const styles = {
   },
 };
 
+const STORAGE_POSTS_KEY = "kunst-app.posts.v1";
+const STORAGE_LIKES_KEY = "kunst-app.likes.v1";
+
+function readStorage(key, fallbackValue) {
+  if (typeof window === "undefined") {
+    return fallbackValue;
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(key);
+    if (!rawValue) {
+      return fallbackValue;
+    }
+    return JSON.parse(rawValue);
+  } catch (error) {
+    return fallbackValue;
+  }
+}
+
+function writeStorage(key, value) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    // Ignore storage errors (e.g. quota/privacy mode).
+  }
+}
+
 class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -130,6 +161,67 @@ function Header({ title }) {
     >
       <b>{title}</b>
     </header>
+  );
+}
+
+function FeedToolbar({
+  searchQuery,
+  onSearchChange,
+  feedMode,
+  setFeedMode,
+  sortOrder,
+  setSortOrder,
+}) {
+  const controlButtonStyle = (active) => ({
+    ...styles.iconBtn,
+    border: "1px solid #2a2a2a",
+    borderRadius: "999px",
+    padding: "6px 10px",
+    fontSize: "12px",
+    fontWeight: 700,
+    opacity: active ? 1 : 0.65,
+    background: active ? "#1d1d1d" : "transparent",
+  });
+
+  return (
+    <section style={{ marginBottom: "16px" }}>
+      <label htmlFor="feed-search" style={{ display: "block", marginBottom: "8px", fontSize: "13px", opacity: 0.8 }}>
+        Suche
+      </label>
+      <input
+        id="feed-search"
+        type="search"
+        value={searchQuery}
+        onChange={(event) => onSearchChange(event.target.value)}
+        placeholder="Kuenstler oder Bio suchen"
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          border: "1px solid #2a2a2a",
+          borderRadius: "8px",
+          background: "#101010",
+          color: "#fff",
+          padding: "10px 12px",
+          marginBottom: "10px",
+        }}
+      />
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        <button type="button" onClick={() => setFeedMode("all")} style={controlButtonStyle(feedMode === "all")}>
+          Alle
+        </button>
+        <button type="button" onClick={() => setFeedMode("liked")} style={controlButtonStyle(feedMode === "liked")}>
+          Nur Likes
+        </button>
+        <button
+          type="button"
+          onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
+          style={controlButtonStyle(true)}
+        >
+          Sortierung: {sortOrder === "newest" ? "Neueste zuerst" : "Aelteste zuerst"}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -279,6 +371,40 @@ function Profile({ data, onBack }) {
 
 function Upload({ onBack, onPost }) {
   const [imageUrl, setImageUrl] = useState("");
+  const [errorText, setErrorText] = useState("");
+
+  const canPost = imageUrl.trim().length > 0;
+
+  const submitPost = () => {
+    const normalized = imageUrl.trim();
+    if (!normalized) {
+      return;
+    }
+
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(normalized);
+    } catch (error) {
+      setErrorText("Bitte eine gueltige URL eingeben.");
+      return;
+    }
+
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      setErrorText("Nur http/https URLs sind erlaubt.");
+      return;
+    }
+
+    setErrorText("");
+    onPost({
+      id: Date.now(),
+      user: "Bingi",
+      bio: "Digital minimal art",
+      avatar: AVATAR_BINGI,
+      images: [normalized],
+    });
+    setImageUrl("");
+    onBack();
+  };
 
   return (
     <section style={{ padding: "20px" }}>
@@ -290,7 +416,12 @@ function Upload({ onBack, onPost }) {
         type="url"
         placeholder="Bild-URL einfuegen"
         value={imageUrl}
-        onChange={(event) => setImageUrl(event.target.value)}
+        onChange={(event) => {
+          setImageUrl(event.target.value);
+          if (errorText) {
+            setErrorText("");
+          }
+        }}
         style={{
           width: "100%",
           padding: "12px",
@@ -302,33 +433,34 @@ function Upload({ onBack, onPost }) {
           boxSizing: "border-box",
         }}
       />
+      {errorText && <p style={{ marginTop: "10px", color: "#ff7d7d", fontSize: "13px" }}>{errorText}</p>}
 
       <button
         type="button"
-        onClick={() => {
-          const normalized = imageUrl.trim();
-          if (!normalized) {
-            return;
-          }
-          onPost({
-            id: Date.now(),
-            user: "Bingi",
-            bio: "Digital minimal art",
-            avatar: AVATAR_BINGI,
-            images: [normalized],
-          });
-          setImageUrl("");
-          onBack();
+        onClick={() => setImageUrl("https://picsum.photos/seed/upload-demo/900/600")}
+        style={{
+          ...styles.iconBtn,
+          marginTop: "8px",
+          fontSize: "13px",
+          textDecoration: "underline",
         }}
+      >
+        Demo-Bild einsetzen
+      </button>
+
+      <button
+        type="button"
+        onClick={submitPost}
+        disabled={!canPost}
         style={{
           marginTop: "14px",
           padding: "12px",
           width: "100%",
-          background: "#fff",
+          background: canPost ? "#fff" : "#5f5f5f",
           color: "#000",
           border: "none",
           borderRadius: "8px",
-          cursor: "pointer",
+          cursor: canPost ? "pointer" : "not-allowed",
           fontWeight: 700,
         }}
       >
@@ -341,8 +473,17 @@ function Upload({ onBack, onPost }) {
 function AppContent() {
   const [current, setCurrent] = useState("feed");
   const [selectedProfile, setSelectedProfile] = useState(null);
-  const [likes, setLikes] = useState({});
-  const [posts, setPosts] = useState(initialPosts);
+  const [likes, setLikes] = useState(() => readStorage(STORAGE_LIKES_KEY, {}));
+  const [posts, setPosts] = useState(() => {
+    const savedPosts = readStorage(STORAGE_POSTS_KEY, initialPosts);
+    if (!Array.isArray(savedPosts) || savedPosts.length === 0) {
+      return initialPosts;
+    }
+    return savedPosts;
+  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [feedMode, setFeedMode] = useState("all");
+  const [sortOrder, setSortOrder] = useState("newest");
 
   const fallbackProfile = useMemo(() => posts[0] || null, [posts]);
   const activeProfile = selectedProfile || fallbackProfile;
@@ -356,21 +497,76 @@ function AppContent() {
     setLikes((previous) => ({ ...previous, [postId]: !previous[postId] }));
   };
 
+  useEffect(() => {
+    writeStorage(STORAGE_POSTS_KEY, posts);
+  }, [posts]);
+
+  useEffect(() => {
+    writeStorage(STORAGE_LIKES_KEY, likes);
+  }, [likes]);
+
+  const visiblePosts = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    let nextPosts = [...posts];
+
+    if (normalizedQuery) {
+      nextPosts = nextPosts.filter((post) => {
+        const byUser = post.user.toLowerCase().includes(normalizedQuery);
+        const byBio = post.bio.toLowerCase().includes(normalizedQuery);
+        return byUser || byBio;
+      });
+    }
+
+    if (feedMode === "liked") {
+      nextPosts = nextPosts.filter((post) => Boolean(likes[post.id]));
+    }
+
+    nextPosts.sort((first, second) => {
+      const firstId = Number(first.id) || 0;
+      const secondId = Number(second.id) || 0;
+      return sortOrder === "newest" ? secondId - firstId : firstId - secondId;
+    });
+
+    return nextPosts;
+  }, [posts, likes, searchQuery, feedMode, sortOrder]);
+
   return (
     <div style={styles.app}>
       <Header title="KUNST" />
 
       {current === "feed" && (
         <main style={{ maxWidth: 640, margin: "0 auto", padding: "14px" }}>
-          {posts.map((post) => (
-            <Post
-              key={post.id}
-              post={post}
-              onProfile={openProfile}
-              liked={Boolean(likes[post.id])}
-              toggleLike={() => toggleLike(post.id)}
-            />
-          ))}
+          <FeedToolbar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            feedMode={feedMode}
+            setFeedMode={setFeedMode}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
+          />
+
+          {visiblePosts.length === 0 ? (
+            <div
+              style={{
+                border: "1px dashed #303030",
+                borderRadius: "10px",
+                padding: "18px",
+                color: "#b7b7b7",
+              }}
+            >
+              Keine Inhalte fuer diesen Filter gefunden.
+            </div>
+          ) : (
+            visiblePosts.map((post) => (
+              <Post
+                key={post.id}
+                post={post}
+                onProfile={openProfile}
+                liked={Boolean(likes[post.id])}
+                toggleLike={() => toggleLike(post.id)}
+              />
+            ))
+          )}
         </main>
       )}
 
