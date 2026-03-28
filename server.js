@@ -37,6 +37,47 @@ const users = [
   },
 ];
 
+const posts = [
+  {
+    id: 1,
+    user: "Bingi",
+    ownerId: "u-bingi",
+    bio: "Digital minimal art",
+    avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Bingi",
+    images: [
+      "https://picsum.photos/seed/bingi-1/900/600",
+      "https://picsum.photos/seed/bingi-2/900/600",
+      "https://picsum.photos/seed/bingi-3/900/600",
+    ],
+  },
+  {
+    id: 2,
+    user: "Pluesch",
+    ownerId: "u-pluesch",
+    bio: "Abstract emotions",
+    avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch",
+    images: [
+      "https://picsum.photos/seed/pluesch-1/900/600",
+      "https://picsum.photos/seed/pluesch-2/900/600",
+      "https://picsum.photos/seed/pluesch-3/900/600",
+    ],
+  },
+  {
+    id: 3,
+    user: "Giream",
+    ownerId: "u-giream",
+    bio: "Visual storytelling",
+    avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Giream",
+    images: [
+      "https://picsum.photos/seed/giream-1/900/600",
+      "https://picsum.photos/seed/giream-2/900/600",
+      "https://picsum.photos/seed/giream-3/900/600",
+    ],
+  },
+];
+
+const likesByUserId = new Map();
+
 function normalizeUsername(username) {
   return String(username || "")
     .trim()
@@ -50,6 +91,24 @@ function toPublicUser(user) {
     displayName: user.displayName,
     bio: user.bio,
     avatar: user.avatar,
+  };
+}
+
+function getUserLikes(userId) {
+  if (!likesByUserId.has(userId)) {
+    likesByUserId.set(userId, {});
+  }
+  return likesByUserId.get(userId);
+}
+
+function toPostPayload(post) {
+  return {
+    id: post.id,
+    user: post.user,
+    ownerId: post.ownerId,
+    bio: post.bio,
+    avatar: post.avatar,
+    images: Array.isArray(post.images) ? post.images : [],
   };
 }
 
@@ -161,6 +220,14 @@ app.put("/api/auth/profile", (req, res) => {
   user.avatar =
     avatar || `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(displayName)}`;
 
+  for (let index = 0; index < posts.length; index += 1) {
+    if (posts[index].ownerId === user.id) {
+      posts[index].user = user.displayName;
+      posts[index].bio = user.bio;
+      posts[index].avatar = user.avatar;
+    }
+  }
+
   return res.json({ user: toPublicUser(user) });
 });
 
@@ -194,6 +261,68 @@ app.put("/api/auth/password", async (req, res) => {
 
   user.passwordHash = await bcrypt.hash(newPassword, 10);
   return res.json({ ok: true });
+});
+
+app.get("/api/feed", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const likes = getUserLikes(user.id);
+  const orderedPosts = [...posts].sort((first, second) => Number(second.id) - Number(first.id));
+
+  return res.json({
+    posts: orderedPosts.map(toPostPayload),
+    likes,
+  });
+});
+
+app.post("/api/feed/posts", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const imageUrl = String(req.body?.imageUrl || "").trim();
+  if (!imageUrl) {
+    return res.status(400).json({ error: "Bild-URL darf nicht leer sein." });
+  }
+
+  const createdPost = {
+    id: Date.now(),
+    ownerId: user.id,
+    user: user.displayName,
+    bio: user.bio,
+    avatar: user.avatar,
+    images: [imageUrl],
+  };
+
+  posts.unshift(createdPost);
+  return res.status(201).json({ post: toPostPayload(createdPost) });
+});
+
+app.put("/api/feed/likes/:postId", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const postId = Number(req.params.postId);
+  if (!Number.isFinite(postId)) {
+    return res.status(400).json({ error: "Ungueltige Post-ID." });
+  }
+
+  const postExists = posts.some((post) => Number(post.id) === postId);
+  if (!postExists) {
+    return res.status(404).json({ error: "Post nicht gefunden." });
+  }
+
+  const liked = Boolean(req.body?.liked);
+  const likes = getUserLikes(user.id);
+  likes[postId] = liked;
+
+  return res.json({ likes });
 });
 
 app.listen(PORT, () => {

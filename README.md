@@ -5,7 +5,7 @@
 Das Projekt besteht jetzt aus:
 
 - React Frontend (Port `3000`)
-- Express API fuer Auth/Profile (Port `4000`)
+- Express API fuer Auth/Profile/Posts/Likes (Port `4000`)
 
 ### 1) Abhaengigkeiten installieren
 
@@ -41,6 +41,19 @@ REACT_APP_API_URL=http://localhost:4000 npm start
 
 - Username: `bingi`
 - Passwort: `kunst123`
+
+---
+
+## Neue API-Funktionen (Server-Daten statt Local Fallback)
+
+Die App nutzt jetzt serverseitige Endpunkte fuer:
+
+- Feed laden: `GET /api/posts`
+- Post erstellen: `POST /api/posts`
+- Eigene Likes laden: `GET /api/likes`
+- Like umschalten: `POST /api/posts/:postId/like`
+
+Damit laufen Posts/Likes/Profile serverseitig statt ueber lokale Fallback-Daten.
 
 ---
 

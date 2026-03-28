@@ -4,6 +4,8 @@ import App from "./App";
 let mockUser;
 let currentPassword;
 const validToken = "test-token";
+let mockPosts;
+let likedPostIds;
 
 function createJsonResponse(status, body) {
   return {
@@ -23,6 +25,27 @@ beforeEach(() => {
     avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Bingi",
   };
   currentPassword = "kunst123";
+  mockPosts = [
+    {
+      id: 1,
+      ownerId: "u-bingi",
+      user: "Bingi",
+      bio: "Digital minimal art",
+      avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Bingi",
+      images: ["https://picsum.photos/seed/bingi-1/900/600"],
+      createdAt: Date.now() - 1000,
+    },
+    {
+      id: 2,
+      ownerId: "u-pluesch",
+      user: "Pluesch",
+      bio: "Abstract emotions",
+      avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch",
+      images: ["https://picsum.photos/seed/pluesch-1/900/600"],
+      createdAt: Date.now(),
+    },
+  ];
+  likedPostIds = new Set([1]);
 
   global.fetch = jest.fn(async (url, options = {}) => {
     const endpoint = new URL(url).pathname;
@@ -84,6 +107,61 @@ beforeEach(() => {
       }
       currentPassword = body.newPassword;
       return createJsonResponse(200, { ok: true });
+    }
+
+    if (endpoint === "/api/posts" && method === "GET") {
+      if (!isAuthorized) {
+        return createJsonResponse(401, { message: "Nicht autorisiert." });
+      }
+      return createJsonResponse(200, { posts: mockPosts });
+    }
+
+    if (endpoint === "/api/posts" && method === "POST") {
+      if (!isAuthorized) {
+        return createJsonResponse(401, { message: "Nicht autorisiert." });
+      }
+      const imageUrl = String(body.imageUrl || "").trim();
+      if (!imageUrl) {
+        return createJsonResponse(400, { message: "Bitte eine Bild-URL angeben." });
+      }
+      const createdPost = {
+        id: Date.now(),
+        ownerId: mockUser.id,
+        user: mockUser.displayName,
+        bio: mockUser.bio,
+        avatar: mockUser.avatar,
+        images: [imageUrl],
+        createdAt: Date.now(),
+      };
+      mockPosts = [createdPost, ...mockPosts];
+      return createJsonResponse(201, { post: createdPost });
+    }
+
+    if (endpoint === "/api/likes" && method === "GET") {
+      if (!isAuthorized) {
+        return createJsonResponse(401, { message: "Nicht autorisiert." });
+      }
+      const likes = {};
+      Array.from(likedPostIds).forEach((id) => {
+        likes[id] = true;
+      });
+      return createJsonResponse(200, { likes });
+    }
+
+    if (endpoint === "/api/likes/toggle" && method === "POST") {
+      if (!isAuthorized) {
+        return createJsonResponse(401, { message: "Nicht autorisiert." });
+      }
+      const postId = Number(body.postId);
+      if (!postId) {
+        return createJsonResponse(400, { message: "Ungueltige Post-ID." });
+      }
+      if (likedPostIds.has(postId)) {
+        likedPostIds.delete(postId);
+      } else {
+        likedPostIds.add(postId);
+      }
+      return createJsonResponse(200, { liked: likedPostIds.has(postId) });
     }
 
     return createJsonResponse(404, { message: "Not found" });

@@ -1,47 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-const AVATAR_BINGI = "https://api.dicebear.com/9.x/initials/svg?seed=Bingi";
-const AVATAR_PLUESCH = "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch";
-const AVATAR_GIREAM = "https://api.dicebear.com/9.x/initials/svg?seed=Giream";
-
-const initialPosts = [
-  {
-    id: 1,
-    user: "Bingi",
-    ownerId: "u-bingi",
-    bio: "Digital minimal art",
-    avatar: AVATAR_BINGI,
-    images: [
-      "https://picsum.photos/seed/bingi-1/900/600",
-      "https://picsum.photos/seed/bingi-2/900/600",
-      "https://picsum.photos/seed/bingi-3/900/600",
-    ],
-  },
-  {
-    id: 2,
-    user: "Pluesch",
-    ownerId: "u-pluesch",
-    bio: "Abstract emotions",
-    avatar: AVATAR_PLUESCH,
-    images: [
-      "https://picsum.photos/seed/pluesch-1/900/600",
-      "https://picsum.photos/seed/pluesch-2/900/600",
-      "https://picsum.photos/seed/pluesch-3/900/600",
-    ],
-  },
-  {
-    id: 3,
-    user: "Giream",
-    ownerId: "u-giream",
-    bio: "Visual storytelling",
-    avatar: AVATAR_GIREAM,
-    images: [
-      "https://picsum.photos/seed/giream-1/900/600",
-      "https://picsum.photos/seed/giream-2/900/600",
-      "https://picsum.photos/seed/giream-3/900/600",
-    ],
-  },
-];
 
 const styles = {
   app: {
@@ -89,8 +47,6 @@ const styles = {
   },
 };
 
-const STORAGE_POSTS_KEY = "kunst-app.posts.v1";
-const STORAGE_LIKES_KEY = "kunst-app.likes.v1";
 const STORAGE_AUTH_TOKEN_KEY = "kunst-app.auth.token.v1";
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
@@ -216,6 +172,16 @@ function createApiClient(token) {
       request("/api/auth/password", {
         method: "PUT",
         body: JSON.stringify(payload),
+      }),
+    getFeed: () => request("/api/feed"),
+    createPost: (payload) =>
+      request("/api/posts", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    toggleLike: (postId) =>
+      request(`/api/posts/${postId}/like`, {
+        method: "POST",
       }),
   };
 }
@@ -1199,20 +1165,35 @@ function createOwnProfile(currentUser, posts) {
   };
 }
 
-function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword }) {
+function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, apiClient }) {
   const [current, setCurrent] = useState("feed");
   const [selectedProfile, setSelectedProfile] = useState(null);
-  const [likes, setLikes] = useState(() => readStorage(STORAGE_LIKES_KEY, {}));
-  const [posts, setPosts] = useState(() => {
-    const savedPosts = readStorage(STORAGE_POSTS_KEY, initialPosts);
-    if (!Array.isArray(savedPosts) || savedPosts.length === 0) {
-      return initialPosts;
-    }
-    return savedPosts;
-  });
+  const [likes, setLikes] = useState({});
+  const [posts, setPosts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [feedMode, setFeedMode] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
+  const [feedErrorText, setFeedErrorText] = useState("");
+  const [isFeedLoading, setIsFeedLoading] = useState(true);
+
+  const loadFeed = useMemo(
+    () => async () => {
+      setIsFeedLoading(true);
+      setFeedErrorText("");
+      try {
+        const [postsResponse, likesResponse] = await Promise.all([apiClient.getPosts(), apiClient.getLikes()]);
+        setPosts(Array.isArray(postsResponse.posts) ? postsResponse.posts : []);
+        setLikes(likesResponse.likes || {});
+      } catch (error) {
+        setFeedErrorText(error.message || "Feed konnte nicht geladen werden.");
+        setPosts([]);
+        setLikes({});
+      } finally {
+        setIsFeedLoading(false);
+      }
+    },
+    [apiClient],
+  );
 
   const ownProfile = useMemo(() => createOwnProfile(currentUser, posts), [currentUser, posts]);
   const activeProfile = selectedProfile && !selectedProfile.isOwnProfile ? selectedProfile : ownProfile;
@@ -1231,17 +1212,23 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword }
     setCurrent("profile");
   };
 
-  const toggleLike = (postId) => {
-    setLikes((previous) => ({ ...previous, [postId]: !previous[postId] }));
+  const toggleLike = async (postId) => {
+    const previousLikes = likes;
+    const previousValue = Boolean(previousLikes[postId]);
+    const optimisticLikes = { ...previousLikes, [postId]: !previousValue };
+    setLikes(optimisticLikes);
+    setFeedErrorText("");
+    try {
+      await apiClient.toggleLike(postId);
+    } catch (error) {
+      setLikes(previousLikes);
+      setFeedErrorText(error.message || "Like konnte nicht gespeichert werden.");
+    }
   };
 
   useEffect(() => {
-    writeStorage(STORAGE_POSTS_KEY, posts);
-  }, [posts]);
-
-  useEffect(() => {
-    writeStorage(STORAGE_LIKES_KEY, likes);
-  }, [likes]);
+    loadFeed();
+  }, [loadFeed, currentUser.id]);
 
   const visiblePosts = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -1283,7 +1270,32 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword }
             setSortOrder={setSortOrder}
           />
 
-          {visiblePosts.length === 0 ? (
+          {feedErrorText && (
+            <div
+              style={{
+                border: "1px dashed #5b2323",
+                borderRadius: "10px",
+                padding: "18px",
+                color: "#ffb9b9",
+                marginBottom: "12px",
+              }}
+            >
+              {feedErrorText}
+            </div>
+          )}
+
+          {isFeedLoading ? (
+            <div
+              style={{
+                border: "1px dashed #303030",
+                borderRadius: "10px",
+                padding: "18px",
+                color: "#b7b7b7",
+              }}
+            >
+              Feed wird geladen...
+            </div>
+          ) : visiblePosts.length === 0 ? (
             <div
               style={{
                 border: "1px dashed #303030",
@@ -1301,7 +1313,9 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword }
                 post={post}
                 onProfile={openProfile}
                 liked={Boolean(likes[post.id])}
-                toggleLike={() => toggleLike(post.id)}
+                toggleLike={() => {
+                  toggleLike(post.id);
+                }}
               />
             ))
           )}
@@ -1353,7 +1367,18 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword }
         <Upload
           currentUser={currentUser}
           onBack={() => setCurrent("feed")}
-          onPost={(newPost) => setPosts((previous) => [newPost, ...previous])}
+          onPost={async (newPost) => {
+            try {
+              const response = await apiClient.createPost({
+                imageUrl: newPost.images?.[0] || "",
+              });
+              setPosts((previous) => [response.post, ...previous]);
+              await loadFeed();
+            } catch (error) {
+              setFeedErrorText(error.message || "Post konnte nicht erstellt werden.");
+              throw error;
+            }
+          }}
         />
       )}
 
