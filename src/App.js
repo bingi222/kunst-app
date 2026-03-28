@@ -3,54 +3,61 @@ import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useSt
 
 const styles = {
   app: {
-    background: "#000",
-    color: "#fff",
+    background: "radial-gradient(circle at 20% 0%, #25143f 0%, #0d0d14 42%, #06060a 100%)",
+    color: "#f6f2ff",
     minHeight: "100vh",
-    paddingBottom: "72px",
+    paddingBottom: "90px",
   },
   card: {
-    marginBottom: "24px",
-    border: "1px solid #1f1f1f",
-    borderRadius: "12px",
+    marginBottom: "20px",
+    border: "1px solid #34275e",
+    borderRadius: "16px",
     overflow: "hidden",
-    background: "#0b0b0b",
+    background: "linear-gradient(145deg, #171328 0%, #0f1019 100%)",
+    boxShadow: "0 10px 28px rgba(0, 0, 0, 0.45)",
   },
   imageGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: "4px",
+    gap: "6px",
   },
   image: {
     width: "100%",
-    height: "140px",
+    height: "152px",
     objectFit: "cover",
-    background: "#161616",
+    background: "#131320",
   },
   iconBtn: {
     background: "transparent",
     border: "none",
-    color: "#fff",
+    color: "#f2ebff",
     cursor: "pointer",
     fontSize: "19px",
     padding: 0,
+    fontFamily: "inherit",
+    transition: "all 160ms ease",
   },
   nav: {
     position: "fixed",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: "#000",
-    borderTop: "1px solid #1f1f1f",
+    left: "50%",
+    transform: "translateX(-50%)",
+    bottom: "14px",
+    width: "min(94vw, 700px)",
+    background: "rgba(15, 15, 24, 0.86)",
+    border: "1px solid #3a2f66",
+    borderRadius: "999px",
+    boxShadow: "0 0 0 1px rgba(176, 125, 255, 0.2), 0 16px 30px rgba(0, 0, 0, 0.5)",
+    backdropFilter: "blur(10px)",
     display: "flex",
     justifyContent: "space-around",
-    padding: "10px 0",
+    padding: "8px 10px",
+    zIndex: 30,
   },
 };
 
 const STORAGE_AUTH_TOKEN_KEY = "kunst-app.auth.token.v1";
 const API_BASE_URL = process.env.REACT_APP_API_URL || "";
 const EMPTY_COMMENTS = [];
-
 function readStorage(key, fallbackValue) {
   if (typeof window === "undefined") {
     return fallbackValue;
