@@ -35,6 +35,11 @@ Optional kannst du die API-URL setzen:
 REACT_APP_API_URL=http://localhost:4000 npm start
 ```
 
+### Hinweis fuer Cloud/HTTPS-Previews
+
+Die App nutzt standardmaessig einen relativen API-Pfad (`/api`) und `npm start` hat einen Proxy auf
+`http://localhost:4000` konfiguriert. Das verhindert Browser-Fehler durch Mixed Content/CORS in Preview-URLs.
+
 ---
 
 ## Standard Demo-Login

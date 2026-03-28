@@ -48,7 +48,7 @@ beforeEach(() => {
   likedPostIds = new Set([1]);
 
   global.fetch = jest.fn(async (url, options = {}) => {
-    const endpoint = new URL(url).pathname;
+    const endpoint = new URL(url, "http://localhost").pathname;
     const method = options.method || "GET";
     const body = options.body ? JSON.parse(options.body) : {};
     const authHeader = options.headers?.Authorization || "";

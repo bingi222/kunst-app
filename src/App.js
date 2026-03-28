@@ -48,7 +48,7 @@ const styles = {
 };
 
 const STORAGE_AUTH_TOKEN_KEY = "kunst-app.auth.token.v1";
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
+const API_BASE_URL = process.env.REACT_APP_API_URL || "";
 
 function readStorage(key, fallbackValue) {
   if (typeof window === "undefined") {
