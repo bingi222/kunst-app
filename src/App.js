@@ -118,6 +118,7 @@ const STORAGE_COMMENT_DRAFTS_KEY = "kunst-app.comment.drafts.v1";
 const API_BASE_URL = process.env.REACT_APP_API_URL || "";
 const EMPTY_COMMENTS = [];
 const MARK_ALL_UNDO_WINDOW_MS = 5000;
+const SESSION_BOOT_TIMEOUT_MS = 5000;
 
 function createApiClient(token) {
   const request = async (path, options = {}) => {
@@ -1006,10 +1007,35 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
+    let settled = false;
+    const completeSessionBoot = () => {
+      if (cancelled || settled) {
+        return false;
+      }
+      settled = true;
+      return true;
+    };
+    const sessionFallbackTimer =
+      typeof window !== "undefined"
+        ? window.setTimeout(() => {
+            if (!completeSessionBoot()) {
+              return;
+            }
+            // eslint-disable-next-line no-console
+            console.log("[session] timeout fallback -> login");
+            setCurrentUser(null);
+            setAuthToken("");
+            setAuthReady(true);
+          }, SESSION_BOOT_TIMEOUT_MS)
+        : null;
 
     const loadSession = async () => {
+      // eslint-disable-next-line no-console
+      console.log("[session] start", { hasToken: Boolean(authToken) });
       if (!authToken) {
-        if (!cancelled) {
+        // eslint-disable-next-line no-console
+        console.log("[session] result -> no session token");
+        if (completeSessionBoot()) {
           setCurrentUser(null);
           setAuthReady(true);
         }
@@ -1019,17 +1045,26 @@ export default function App() {
       setAuthReady(false);
       try {
         const response = await apiClient.me();
-        if (!cancelled) {
-          setCurrentUser(response.user);
+        // eslint-disable-next-line no-console
+        console.log("[session] result -> session loaded", {
+          hasUser: Boolean(response?.user),
+          userId: response?.user?.id || null,
+        });
+        if (completeSessionBoot()) {
+          setCurrentUser(response?.user || null);
+          setAuthReady(true);
         }
       } catch (error) {
-        if (!cancelled) {
+        // eslint-disable-next-line no-console
+        console.log("[session] fetch error", error);
+        if (completeSessionBoot()) {
           setCurrentUser(null);
           setAuthToken("");
+          setAuthReady(true);
         }
       } finally {
-        if (!cancelled) {
-          setAuthReady(true);
+        if (sessionFallbackTimer !== null) {
+          window.clearTimeout(sessionFallbackTimer);
         }
       }
     };
@@ -1037,6 +1072,9 @@ export default function App() {
     loadSession();
     return () => {
       cancelled = true;
+      if (sessionFallbackTimer !== null) {
+        window.clearTimeout(sessionFallbackTimer);
+      }
     };
   }, [authToken, apiClient, setAuthToken]);
 
