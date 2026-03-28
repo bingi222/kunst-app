@@ -792,6 +792,14 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     [loadNotifications],
   );
 
+  const handleRefreshCurrent = useCallback(() => {
+    if (current === "activity") {
+      loadNotifications();
+      return;
+    }
+    loadFeed();
+  }, [current, loadFeed, loadNotifications]);
+
   useEffect(() => {
     if (current !== "feed" || highlightedPostId === null) {
       return undefined;
@@ -823,9 +831,9 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
         onGoFeed={() => handleTabChange("feed")}
         onGoUpload={() => handleTabChange("upload")}
         onGoActivity={() => handleTabChange("activity")}
+        onRefreshCurrent={handleRefreshCurrent}
         onOpenOwnProfile={openOwnProfile}
         unreadNotificationsCount={unreadNotificationsCount}
-        styles={styles}
       />
 
       {current === "feed" && (
@@ -841,6 +849,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
             isRefreshing={isFeedLoading}
             lastUpdatedAt={lastFeedLoadedAt}
             onResetFilters={handleResetFilters}
+            showRefreshButton={false}
           />
 
           {feedErrorText && (

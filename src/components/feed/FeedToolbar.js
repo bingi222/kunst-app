@@ -27,6 +27,7 @@ export default function FeedToolbar({
   onRefresh,
   isRefreshing,
   lastUpdatedAt,
+  showRefreshButton = true,
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const lastUpdatedLabel = lastUpdatedAt
@@ -49,9 +50,11 @@ export default function FeedToolbar({
           >
             ⚙
           </button>
-          <button type="button" onClick={onRefresh} disabled={isRefreshing} style={buttonStyle(false)}>
-            {isRefreshing ? "Aktualisiere..." : "Aktualisieren"}
-          </button>
+          {showRefreshButton && (
+            <button type="button" onClick={onRefresh} disabled={isRefreshing} style={buttonStyle(false)}>
+              {isRefreshing ? "Aktualisiere..." : "Aktualisieren"}
+            </button>
+          )}
         </div>
       </div>
       <input

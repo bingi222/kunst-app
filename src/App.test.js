@@ -376,6 +376,7 @@ test("allows changing profile password", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Passwort aktualisieren" }));
 
   expect(await screen.findByText("Passwort wurde aktualisiert.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Benutzermenue oeffnen" }));
   fireEvent.click(screen.getByRole("button", { name: "Logout" }));
 
   fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
@@ -533,6 +534,7 @@ test("shows notifications badge and marks all as read", async () => {
   });
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
+  fireEvent.click(await screen.findByRole("button", { name: "Benutzermenue oeffnen" }));
   const activityButton = await screen.findByRole("button", { name: /Aktivitaet/ });
   await waitFor(() => {
     expect(activityButton.getAttribute("aria-label") || "").toContain("1 ungelesen");
@@ -569,6 +571,7 @@ test("opens related post from activity notification", async () => {
   });
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
+  fireEvent.click(await screen.findByRole("button", { name: "Benutzermenue oeffnen" }));
   const activityButton = await screen.findByRole("button", { name: /Aktivitaet/ });
   fireEvent.click(activityButton);
 
@@ -606,6 +609,7 @@ test("renders fallback notification text when message is missing", async () => {
   });
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
+  fireEvent.click(await screen.findByRole("button", { name: "Benutzermenue oeffnen" }));
   fireEvent.click(await screen.findByRole("button", { name: /Aktivitaet/ }));
   expect(await screen.findByText(/hat deinen Beitrag geliked/)).toBeInTheDocument();
 });
@@ -622,6 +626,7 @@ test("supports manual feed refresh", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
   await screen.findByRole("button", { name: "Home" });
+  fireEvent.click(screen.getByRole("button", { name: "Benutzermenue oeffnen" }));
   await waitFor(() => {
     expect(screen.getByRole("button", { name: /Aktualisier/ })).not.toBeDisabled();
   });
@@ -657,6 +662,7 @@ test("allows undo after mark all notifications as read", async () => {
   });
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
+  fireEvent.click(await screen.findByRole("button", { name: "Benutzermenue oeffnen" }));
   fireEvent.click(await screen.findByRole("button", { name: /Aktivitaet/ }));
   expect(await screen.findByRole("button", { name: "Als gelesen markieren" })).toBeInTheDocument();
 
@@ -712,6 +718,7 @@ test("persists feed filters and allows reset", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Filter anzeigen" }));
   fireEvent.click(screen.getByRole("button", { name: "Nur Likes" }));
 
+  fireEvent.click(screen.getByRole("button", { name: "Benutzermenue oeffnen" }));
   fireEvent.click(screen.getByRole("button", { name: "Logout" }));
   fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
     target: { value: "bingi" },

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 function navBtnStyle(isActive) {
   return {
@@ -23,15 +23,37 @@ export default function Header({
   onGoFeed,
   onGoUpload,
   onGoActivity,
+  onRefreshCurrent,
   onOpenOwnProfile,
   unreadNotificationsCount,
-  styles,
 }) {
-  const profileButtonStyle = currentTab === "profile" ? navBtnStyle(true) : navBtnStyle(false);
-  const mergedProfileButtonStyle = {
-    ...profileButtonStyle,
-    ...(currentTab === "profile" ? {} : { background: "#222a39" }),
-  };
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const profileButtonStyle = navBtnStyle(currentTab === "profile");
+
+  useEffect(() => {
+    if (!isMenuOpen) {
+      return undefined;
+    }
+
+    const handleDocumentClick = (event) => {
+      if (!menuRef.current?.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleDocumentClick);
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isMenuOpen]);
 
   return (
     <header
@@ -45,61 +67,136 @@ export default function Header({
         zIndex: 10,
       }}
     >
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "10px" }}>
-          <div>
-            <b>{title}</b>
-            <div style={{ fontSize: "11px", opacity: 0.62, marginTop: "2px" }}>Angemeldet als {currentUser.displayName}</div>
-          </div>
-          <button type="button" onClick={onLogout} style={styles.secondaryBtn}>
-            Logout
-          </button>
-        </div>
+      <div
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+        }}
+      >
+        <b>{title}</b>
 
-        <nav style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+        <nav style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px", justifyContent: "center" }}>
           <button type="button" onClick={onGoFeed} style={navBtnStyle(currentTab === "feed")}>
             Home
           </button>
           <button type="button" onClick={onGoUpload} style={navBtnStyle(currentTab === "upload")}>
             Upload
           </button>
-          <button
-            type="button"
-            onClick={onGoActivity}
-            style={navBtnStyle(currentTab === "activity")}
-            aria-label={
-              unreadNotificationsCount > 0
-                ? `Aktivitaet (${unreadNotificationsCount} ungelesen)`
-                : "Aktivitaet"
-            }
-          >
-            Aktivitaet
-            {unreadNotificationsCount > 0 && (
-              <span
-                style={{
-                  marginLeft: "8px",
-                  display: "inline-flex",
-                  minWidth: "16px",
-                  height: "16px",
-                  borderRadius: "999px",
-                  padding: "0 4px",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "#8b5cf6",
-                  color: "#fff",
-                  fontSize: "10px",
-                  lineHeight: 1,
-                  fontWeight: 700,
-                }}
-              >
-                {unreadNotificationsCount > 99 ? "99+" : unreadNotificationsCount}
-              </span>
-            )}
-          </button>
-          <button type="button" onClick={onOpenOwnProfile} style={mergedProfileButtonStyle}>
+          <button type="button" onClick={onOpenOwnProfile} style={profileButtonStyle}>
             Mein Profil
           </button>
         </nav>
+
+        <div style={{ position: "relative" }} ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((previous) => !previous)}
+            style={{
+              ...navBtnStyle(false),
+              minWidth: "40px",
+              width: "40px",
+              height: "40px",
+              padding: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700,
+            }}
+            aria-label={isMenuOpen ? "Benutzermenue schliessen" : "Benutzermenue oeffnen"}
+          >
+            {String(currentUser.displayName || "?").slice(0, 1).toUpperCase()}
+          </button>
+
+          {isMenuOpen && (
+            <div
+              style={{
+                position: "absolute",
+                right: 0,
+                top: "calc(100% + 8px)",
+                minWidth: "220px",
+                borderRadius: "14px",
+                border: "1px solid #2b313d",
+                background: "#141a25",
+                boxShadow: "0 10px 36px rgba(0, 0, 0, 0.38)",
+                padding: "10px",
+                zIndex: 40,
+              }}
+            >
+              <div style={{ fontSize: "12px", color: "#9ca3af", marginBottom: "10px", padding: "0 4px" }}>
+                Angemeldet als {currentUser.displayName}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onGoActivity();
+                }}
+                style={{
+                  ...navBtnStyle(currentTab === "activity"),
+                  width: "100%",
+                  justifyContent: "space-between",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  marginBottom: "8px",
+                }}
+                aria-label={
+                  unreadNotificationsCount > 0
+                    ? `Aktivitaet (${unreadNotificationsCount} ungelesen)`
+                    : "Aktivitaet"
+                }
+              >
+                <span>Aktivitaet</span>
+                {unreadNotificationsCount > 0 && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      minWidth: "16px",
+                      height: "16px",
+                      borderRadius: "999px",
+                      padding: "0 4px",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "#8b5cf6",
+                      color: "#fff",
+                      fontSize: "10px",
+                      lineHeight: 1,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {unreadNotificationsCount > 99 ? "99+" : unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onRefreshCurrent();
+                }}
+                style={{ ...navBtnStyle(false), width: "100%", marginBottom: "8px" }}
+              >
+                Aktualisieren
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onLogout();
+                }}
+                style={{ ...navBtnStyle(false), width: "100%" }}
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

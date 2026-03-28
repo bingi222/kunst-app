@@ -56,6 +56,7 @@ const PostCard = React.memo(function PostCard({
       }}
     >
       <div style={{ position: "relative", overflow: "hidden" }}>
+      <div className="artwork-thumb">
         <SafeImage
           src={post.images[0]}
           alt={`Artwork von ${post.user}`}
@@ -84,7 +85,6 @@ const PostCard = React.memo(function PostCard({
             >
               <HeartIcon active={liked} />
             </button>
-            <span style={{ fontSize: "12px", fontWeight: 600 }}>{liked ? "Geliked" : "Like"}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <button
@@ -96,6 +96,7 @@ const PostCard = React.memo(function PostCard({
               <CommentIcon />
               <span style={{ marginLeft: "6px", fontSize: "12px", fontWeight: 600 }}>{commentCount}</span>
             </button>
+            <span style={{ display: "none" }}>{commentCount}</span>
             {String(post.ownerId || "") === String(currentUserId || "") && (
               <button
                 type="button"
@@ -113,6 +114,7 @@ const PostCard = React.memo(function PostCard({
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {isCommentsOpen && (
