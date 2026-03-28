@@ -212,6 +212,15 @@ function createApiClient(token) {
         method: "PUT",
         body: JSON.stringify({ liked }),
       }),
+    getNotifications: () => request("/api/notifications"),
+    markAllNotificationsRead: () =>
+      request("/api/notifications/read-all", {
+        method: "PUT",
+      }),
+    markNotificationRead: (notificationId) =>
+      request(`/api/notifications/${notificationId}/read`, {
+        method: "PUT",
+      }),
     getComments: (postId) => request(`/api/feed/posts/${postId}/comments`),
     createComment: (postId, payload) =>
       request(`/api/feed/posts/${postId}/comments`, {
@@ -578,7 +587,27 @@ function CommentIcon() {
   );
 }
 
-function BottomNav({ current, setCurrent, onOpenOwnProfile }) {
+function BellIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ display: "block", width: 18, height: 18 }}
+      aria-hidden="true"
+    >
+      <path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
+
+function BottomNav({ current, setCurrent, onOpenOwnProfile, unreadNotificationsCount }) {
   const linkStyle = (tab) => ({
     ...styles.iconBtn,
     fontSize: "14px",
@@ -594,10 +623,148 @@ function BottomNav({ current, setCurrent, onOpenOwnProfile }) {
       <button type="button" onClick={() => setCurrent("upload")} style={linkStyle("upload")}>
         Upload
       </button>
+      <button
+        type="button"
+        onClick={() => setCurrent("activity")}
+        style={linkStyle("activity")}
+        aria-label={
+          unreadNotificationsCount > 0
+            ? `Aktivitaet (${unreadNotificationsCount} ungelesen)`
+            : "Aktivitaet"
+        }
+      >
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", position: "relative" }}>
+          <BellIcon />
+          <span>Aktivitaet</span>
+          {unreadNotificationsCount > 0 && (
+            <span
+              style={{
+                minWidth: "16px",
+                height: "16px",
+                padding: "0 4px",
+                borderRadius: "999px",
+                background: "#ff5f5f",
+                color: "#fff",
+                fontSize: "10px",
+                lineHeight: "16px",
+                textAlign: "center",
+                fontWeight: 700,
+              }}
+            >
+              {unreadNotificationsCount > 99 ? "99+" : unreadNotificationsCount}
+            </span>
+          )}
+        </span>
+      </button>
       <button type="button" onClick={onOpenOwnProfile} style={linkStyle("profile")}>
         Mein Profil
       </button>
     </nav>
+  );
+}
+
+function Activity({ notifications, isLoading, errorText, onMarkAllRead, onMarkRead, onBack }) {
+  const unreadCount = notifications.filter((notification) => !notification.read).length;
+
+  return (
+    <section style={{ maxWidth: 640, margin: "0 auto", padding: "14px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+        <button type="button" onClick={onBack} style={styles.iconBtn}>
+          ← Zurueck
+        </button>
+        <button
+          type="button"
+          onClick={onMarkAllRead}
+          style={{
+            ...styles.iconBtn,
+            border: "1px solid #2d2d2d",
+            borderRadius: "999px",
+            padding: "6px 10px",
+            fontSize: "12px",
+          }}
+        >
+          Alle als gelesen markieren
+        </button>
+      </div>
+
+      <h2 style={{ marginTop: 0 }}>Aktivitaet</h2>
+      {errorText && (
+        <div
+          style={{
+            border: "1px dashed #5b2323",
+            borderRadius: "10px",
+            padding: "12px",
+            color: "#ffb9b9",
+            marginBottom: "10px",
+          }}
+        >
+          {errorText}
+        </div>
+      )}
+      {isLoading ? (
+        <div
+          style={{
+            border: "1px dashed #303030",
+            borderRadius: "10px",
+            padding: "18px",
+            color: "#b7b7b7",
+          }}
+        >
+          Aktivitaet wird geladen...
+        </div>
+      ) : notifications.length === 0 ? (
+        <div
+          style={{
+            border: "1px dashed #303030",
+            borderRadius: "10px",
+            padding: "18px",
+            color: "#b7b7b7",
+          }}
+        >
+          Noch keine Benachrichtigungen.
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: "10px" }}>
+          {unreadCount === 0 && (
+            <p style={{ margin: 0, fontSize: "12px", color: "#9b9b9b" }}>
+              Keine ungelesenen Benachrichtigungen.
+            </p>
+          )}
+          {notifications.map((notification) => (
+            <div
+              key={notification.id}
+              style={{
+                border: "1px solid #252525",
+                borderRadius: "10px",
+                padding: "10px 12px",
+                background: notification.read ? "#0b0b0b" : "#121212",
+              }}
+            >
+              <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.4 }}>
+                <strong>{notification.actorName}</strong> {notification.message}
+              </p>
+              <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#8f8f8f" }}>
+                {formatRelativeTime(notification.createdAt)}
+              </p>
+              {!notification.read && (
+                <button
+                  type="button"
+                  onClick={() => onMarkRead(notification.id)}
+                  style={{
+                    ...styles.iconBtn,
+                    marginTop: "8px",
+                    fontSize: "12px",
+                    textDecoration: "underline",
+                  }}
+                >
+                  Als gelesen markieren
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1381,6 +1548,10 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [likes, setLikes] = useState({});
   const [posts, setPosts] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
+  const [notificationsErrorText, setNotificationsErrorText] = useState("");
   const [commentsByPostId, setCommentsByPostId] = useState({});
   const [commentsLoadingByPostId, setCommentsLoadingByPostId] = useState({});
   const [commentSubmittingByPostId, setCommentSubmittingByPostId] = useState({});
@@ -1407,6 +1578,30 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
         setLikes({});
       } finally {
         setIsFeedLoading(false);
+      }
+    },
+    [apiClient],
+  );
+
+  const loadNotifications = useMemo(
+    () => async () => {
+      setIsNotificationsLoading(true);
+      setNotificationsErrorText("");
+      try {
+        const response = await apiClient.getNotifications();
+        const list = Array.isArray(response.notifications) ? response.notifications : [];
+        setNotifications(list);
+        if (typeof response.unreadCount === "number" && Number.isFinite(response.unreadCount)) {
+          setUnreadNotificationsCount(Math.max(0, Number(response.unreadCount)));
+        } else {
+          setUnreadNotificationsCount(list.filter((notification) => !notification.read).length);
+        }
+      } catch (error) {
+        setNotificationsErrorText(error.message || "Aktivitaet konnte nicht geladen werden.");
+        setNotifications([]);
+        setUnreadNotificationsCount(0);
+      } finally {
+        setIsNotificationsLoading(false);
       }
     },
     [apiClient],
@@ -1523,9 +1718,43 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     }
   };
 
+  const markAllNotificationsRead = async () => {
+    const previousNotifications = notifications;
+    const previousUnreadCount = unreadNotificationsCount;
+    setNotifications((previous) => previous.map((notification) => ({ ...notification, read: true })));
+    setUnreadNotificationsCount(0);
+    setNotificationsErrorText("");
+    try {
+      await apiClient.markAllNotificationsRead();
+    } catch (error) {
+      setNotifications(previousNotifications);
+      setUnreadNotificationsCount(previousUnreadCount);
+      setNotificationsErrorText(error.message || "Benachrichtigungen konnten nicht aktualisiert werden.");
+    }
+  };
+
+  const markNotificationRead = async (notificationId) => {
+    const previousNotifications = notifications;
+    const previousUnreadCount = unreadNotificationsCount;
+    const optimisticNotifications = previousNotifications.map((notification) =>
+      notification.id === notificationId ? { ...notification, read: true } : notification,
+    );
+    setNotifications(optimisticNotifications);
+    setUnreadNotificationsCount(optimisticNotifications.filter((notification) => !notification.read).length);
+    setNotificationsErrorText("");
+    try {
+      await apiClient.markNotificationRead(notificationId);
+    } catch (error) {
+      setNotifications(previousNotifications);
+      setUnreadNotificationsCount(previousUnreadCount);
+      setNotificationsErrorText(error.message || "Benachrichtigung konnte nicht aktualisiert werden.");
+    }
+  };
+
   useEffect(() => {
     loadFeed();
-  }, [loadFeed, currentUser.id]);
+    loadNotifications();
+  }, [loadFeed, loadNotifications, currentUser.id]);
 
   const visiblePosts = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -1638,6 +1867,17 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
         </main>
       )}
 
+      {current === "activity" && (
+        <Activity
+          notifications={notifications}
+          isLoading={isNotificationsLoading}
+          errorText={notificationsErrorText}
+          onMarkAllRead={markAllNotificationsRead}
+          onMarkRead={markNotificationRead}
+          onBack={() => setCurrent("feed")}
+        />
+      )}
+
       {current === "profile" && (
         <Profile
           data={activeProfile}
@@ -1702,11 +1942,15 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
         current={current}
         setCurrent={(nextTab) => {
           setCurrent(nextTab);
+          if (nextTab === "activity") {
+            loadNotifications();
+          }
           if (nextTab !== "profile") {
             setSelectedProfile(null);
           }
         }}
         onOpenOwnProfile={openOwnProfile}
+        unreadNotificationsCount={unreadNotificationsCount}
       />
     </div>
   );

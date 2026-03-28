@@ -78,6 +78,7 @@ const posts = [
 
 const likesByUserId = new Map();
 const commentsByPostId = new Map();
+const notificationsByUserId = new Map();
 
 function normalizeUsername(username) {
   return String(username || "")
@@ -114,6 +115,33 @@ function getPostComments(postId) {
   return commentsByPostId.get(normalizedPostId);
 }
 
+function getUserNotifications(userId) {
+  if (!notificationsByUserId.has(userId)) {
+    notificationsByUserId.set(userId, []);
+  }
+  return notificationsByUserId.get(userId);
+}
+
+function createNotification({ recipientUserId, actorUser, type, postId, text }) {
+  if (!recipientUserId || !actorUser || recipientUserId === actorUser.id) {
+    return null;
+  }
+
+  const notification = {
+    id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    type,
+    postId: Number(postId),
+    actorUserId: actorUser.id,
+    actorName: actorUser.displayName,
+    actorAvatar: actorUser.avatar,
+    text: String(text || ""),
+    createdAt: Date.now(),
+    read: false,
+  };
+  getUserNotifications(recipientUserId).unshift(notification);
+  return notification;
+}
+
 function toCommentPayload(comment) {
   return {
     id: comment.id,
@@ -123,6 +151,20 @@ function toCommentPayload(comment) {
     userAvatar: comment.userAvatar,
     text: comment.text,
     createdAt: comment.createdAt,
+  };
+}
+
+function toNotificationPayload(notification) {
+  return {
+    id: notification.id,
+    type: notification.type,
+    postId: notification.postId,
+    actorUserId: notification.actorUserId,
+    actorName: notification.actorName,
+    actorAvatar: notification.actorAvatar,
+    text: notification.text,
+    createdAt: notification.createdAt,
+    read: Boolean(notification.read),
   };
 }
 
@@ -281,6 +323,15 @@ app.put("/api/auth/profile", (req, res) => {
     }
   });
 
+  notificationsByUserId.forEach((notifications) => {
+    for (let index = 0; index < notifications.length; index += 1) {
+      if (notifications[index].actorUserId === user.id) {
+        notifications[index].actorName = user.displayName;
+        notifications[index].actorAvatar = user.avatar;
+      }
+    }
+  });
+
   return res.json({ user: toPublicUser(user) });
 });
 
@@ -365,8 +416,8 @@ app.put("/api/feed/likes/:postId", (req, res) => {
     return res.status(400).json({ error: "Ungueltige Post-ID." });
   }
 
-  const postExists = posts.some((post) => Number(post.id) === postId);
-  if (!postExists) {
+  const post = getPostById(postId);
+  if (!post) {
     return res.status(404).json({ error: "Post nicht gefunden." });
   }
 
@@ -374,6 +425,15 @@ app.put("/api/feed/likes/:postId", (req, res) => {
   const likes = getUserLikes(user.id);
   const nextLiked = typeof requestedLiked === "boolean" ? requestedLiked : !Boolean(likes[postId]);
   likes[postId] = nextLiked;
+
+  if (nextLiked === true) {
+    createNotification({
+      recipientUserId: post.ownerId,
+      actorUser: user,
+      type: "like",
+      postId: post.id,
+    });
+  }
 
   return res.json({ liked: nextLiked, likes: toLikesPayload(user.id) });
 });
@@ -434,7 +494,65 @@ app.post("/api/feed/posts/:postId/comments", (req, res) => {
   };
   getPostComments(post.id).push(comment);
 
+  createNotification({
+    recipientUserId: post.ownerId,
+    actorUser: user,
+    type: "comment",
+    postId: post.id,
+    text: text.slice(0, 200),
+  });
+
   return res.status(201).json({ comment: toCommentPayload(comment) });
+});
+
+app.get("/api/notifications", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const notifications = getUserNotifications(user.id);
+  const orderedNotifications = [...notifications].sort(
+    (first, second) => Number(second.createdAt) - Number(first.createdAt),
+  );
+  return res.json({
+    notifications: orderedNotifications.map(toNotificationPayload),
+    unreadCount: orderedNotifications.filter((notification) => !notification.read).length,
+  });
+});
+
+app.put("/api/notifications/read-all", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const notifications = getUserNotifications(user.id);
+  for (let index = 0; index < notifications.length; index += 1) {
+    notifications[index].read = true;
+  }
+  return res.json({ ok: true });
+});
+
+app.put("/api/notifications/:notificationId/read", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const notificationId = String(req.params.notificationId || "").trim();
+  if (!notificationId) {
+    return res.status(400).json({ error: "Ungueltige Notification-ID." });
+  }
+
+  const notifications = getUserNotifications(user.id);
+  const notification = notifications.find((item) => item.id === notificationId);
+  if (!notification) {
+    return res.status(404).json({ error: "Notification nicht gefunden." });
+  }
+
+  notification.read = true;
+  return res.json({ notification: toNotificationPayload(notification) });
 });
 
 app.post("/api/posts", (req, res) => {

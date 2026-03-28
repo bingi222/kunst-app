@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import App from "./App";
 
 let mockUser;
@@ -7,6 +7,7 @@ const validToken = "test-token";
 let mockPosts;
 let likedPostIds;
 let commentsByPostId;
+let notificationsByUserId;
 
 function createJsonResponse(status, body) {
   return {
@@ -63,6 +64,7 @@ beforeEach(() => {
     ],
     2: [],
   };
+  notificationsByUserId = {};
 
   global.fetch = jest.fn(async (url, options = {}) => {
     const endpoint = new URL(url, "http://localhost").pathname;
@@ -163,6 +165,26 @@ beforeEach(() => {
       return createJsonResponse(201, { post: createdPost });
     }
 
+    if (endpoint === "/api/notifications" && method === "GET") {
+      if (!isAuthorized) {
+        return createJsonResponse(401, { message: "Nicht autorisiert." });
+      }
+      const notifications = notificationsByUserId[mockUser.id] || [];
+      const unreadCount = notifications.filter((item) => item.read !== true).length;
+      return createJsonResponse(200, { notifications, unreadCount });
+    }
+
+    if (endpoint === "/api/notifications/read-all" && method === "PUT") {
+      if (!isAuthorized) {
+        return createJsonResponse(401, { message: "Nicht autorisiert." });
+      }
+      notificationsByUserId[mockUser.id] = (notificationsByUserId[mockUser.id] || []).map((item) => ({
+        ...item,
+        read: true,
+      }));
+      return createJsonResponse(200, { ok: true });
+    }
+
     if (endpoint.startsWith("/api/feed/likes/") && method === "PUT") {
       if (!isAuthorized) {
         return createJsonResponse(401, { message: "Nicht autorisiert." });
@@ -174,6 +196,23 @@ beforeEach(() => {
 
       if (body.liked) {
         likedPostIds.add(postId);
+        const post = mockPosts.find((item) => Number(item.id) === postId);
+        if (post && post.ownerId !== mockUser.id) {
+          notificationsByUserId[post.ownerId] = [
+            {
+              id: Date.now(),
+              type: "like",
+              postId,
+              actorId: mockUser.id,
+              actorName: mockUser.displayName,
+              actorAvatar: mockUser.avatar,
+              text: `${mockUser.displayName} hat deinen Beitrag geliked.`,
+              read: false,
+              createdAt: Date.now(),
+            },
+            ...(notificationsByUserId[post.ownerId] || []),
+          ];
+        }
       } else {
         likedPostIds.delete(postId);
       }
@@ -224,6 +263,23 @@ beforeEach(() => {
       mockPosts = mockPosts.map((post) =>
         Number(post.id) === postId ? { ...post, commentCount: (post.commentCount || 0) + 1 } : post,
       );
+      const post = mockPosts.find((item) => Number(item.id) === postId);
+      if (post && post.ownerId !== mockUser.id) {
+        notificationsByUserId[post.ownerId] = [
+          {
+            id: Date.now() + 1,
+            type: "comment",
+            postId,
+            actorId: mockUser.id,
+            actorName: mockUser.displayName,
+            actorAvatar: mockUser.avatar,
+            text: `${mockUser.displayName} hat kommentiert: "${text}"`,
+            read: false,
+            createdAt: Date.now(),
+          },
+          ...(notificationsByUserId[post.ownerId] || []),
+        ];
+      }
       return createJsonResponse(201, { comment: createdComment });
     }
 
@@ -381,4 +437,40 @@ test("shows comment count immediately in feed", async () => {
   const commentButtons = await screen.findAllByRole("button", { name: "Kommentare anzeigen" });
   const hasVisibleCountOne = commentButtons.some((button) => (button.textContent || "").includes("1"));
   expect(hasVisibleCountOne).toBe(true);
+});
+
+test("shows notifications badge and marks all as read", async () => {
+  notificationsByUserId["u-bingi"] = [
+    {
+      id: 9001,
+      type: "comment",
+      postId: 1,
+      actorId: "u-pluesch",
+      actorName: "Pluesch",
+      actorAvatar: "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch",
+      text: "Pluesch hat kommentiert: \"Starke Farben!\"",
+      read: false,
+      createdAt: Date.now() - 20_000,
+    },
+  ];
+
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const activityButton = await screen.findByRole("button", { name: /Aktivitaet/ });
+  await waitFor(() => {
+    expect(activityButton.getAttribute("aria-label") || "").toContain("1 ungelesen");
+  });
+  fireEvent.click(activityButton);
+  expect(await screen.findByRole("button", { name: "Als gelesen markieren" })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Alle als gelesen markieren" }));
+  expect(await screen.findByText("Keine ungelesenen Benachrichtigungen.")).toBeInTheDocument();
 });
