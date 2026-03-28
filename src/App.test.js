@@ -456,7 +456,7 @@ test("allows unliking a previously liked post", async () => {
 
   fireEvent.click(screen.getByRole("button", { name: "Nur Likes" }));
 
-  expect(await screen.findByText("Bingi")).toBeInTheDocument();
+  expect(await screen.findByRole("button", { name: "Like umschalten" })).toBeInTheDocument();
 
   const likeButtons = screen.getAllByRole("button", { name: "Like umschalten" });
   fireEvent.click(likeButtons[0]);
