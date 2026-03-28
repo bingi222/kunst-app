@@ -506,6 +506,44 @@ function SafeImage({ src, alt, style, onDoubleClick }) {
   );
 }
 
+function HeartIcon({ active }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill={active ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ display: "block", width: 22, height: 22 }}
+      aria-hidden="true"
+    >
+      <path d="M20.8 5.6c-1.5-1.5-3.9-1.5-5.4 0L12 9l-3.4-3.4c-1.5-1.5-3.9-1.5-5.4 0a3.82 3.82 0 0 0 0 5.4L12 19.8l8.8-8.8a3.82 3.82 0 0 0 0-5.4z" />
+    </svg>
+  );
+}
+
+function CommentIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ display: "block", width: 22, height: 22 }}
+      aria-hidden="true"
+    >
+      <path d="M21 14a4 4 0 0 1-4 4H9l-4 3v-3a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4z" />
+    </svg>
+  );
+}
+
 function BottomNav({ current, setCurrent, onOpenOwnProfile }) {
   const linkStyle = (tab) => ({
     ...styles.iconBtn,
@@ -560,7 +598,7 @@ function Post({ post, onProfile, liked, toggleLike }) {
 
       <div style={{ display: "flex", gap: "16px", padding: "10px 14px" }}>
         <button type="button" onClick={toggleLike} style={styles.iconBtn} aria-label="Like umschalten">
-          {liked ? "♥" : "♡"}
+          <HeartIcon active={liked} />
         </button>
         <button
           type="button"
@@ -568,7 +606,7 @@ function Post({ post, onProfile, liked, toggleLike }) {
           style={styles.iconBtn}
           aria-label="Kommentare"
         >
-          💬
+          <CommentIcon />
         </button>
       </div>
     </article>
@@ -1216,11 +1254,19 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const toggleLike = async (postId) => {
     const previousLikes = likes;
     const previousValue = Boolean(previousLikes[postId]);
-    const optimisticLikes = { ...previousLikes, [postId]: !previousValue };
+    const optimisticLikes = { ...previousLikes };
+    if (previousValue) {
+      delete optimisticLikes[postId];
+    } else {
+      optimisticLikes[postId] = true;
+    }
     setLikes(optimisticLikes);
     setFeedErrorText("");
     try {
-      await apiClient.toggleLike(postId);
+      const response = await apiClient.toggleLike(postId);
+      if (typeof response?.liked === "boolean") {
+        setLikes((previous) => ({ ...previous, [postId]: response.liked }));
+      }
     } catch (error) {
       setLikes(previousLikes);
       setFeedErrorText(error.message || "Like konnte nicht gespeichert werden.");

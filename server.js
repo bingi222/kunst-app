@@ -101,6 +101,18 @@ function getUserLikes(userId) {
   return likesByUserId.get(userId);
 }
 
+function toLikesPayload(userId) {
+  const likes = getUserLikes(userId);
+  const payload = {};
+  for (let index = 0; index < posts.length; index += 1) {
+    const postId = Number(posts[index].id);
+    if (likes[postId] === true) {
+      payload[postId] = true;
+    }
+  }
+  return payload;
+}
+
 function toPostPayload(post) {
   return {
     id: post.id,
@@ -187,6 +199,11 @@ app.post("/api/auth/login", async (req, res) => {
     return res.status(401).json({ error: "Login fehlgeschlagen. Bitte Daten pruefen." });
   }
 
+  // Ensure deterministic default for demo users: first login starts with no likes.
+  if (!likesByUserId.has(user.id)) {
+    likesByUserId.set(user.id, {});
+  }
+
   return res.json({
     token: signToken(user),
     user: toPublicUser(user),
@@ -269,12 +286,11 @@ app.get("/api/feed", (req, res) => {
     return res.status(401).json({ error: "Nicht autorisiert." });
   }
 
-  const likes = getUserLikes(user.id);
   const orderedPosts = [...posts].sort((first, second) => Number(second.id) - Number(first.id));
 
   return res.json({
     posts: orderedPosts.map(toPostPayload),
-    likes,
+    likes: toLikesPayload(user.id),
   });
 });
 
@@ -318,11 +334,12 @@ app.put("/api/feed/likes/:postId", (req, res) => {
     return res.status(404).json({ error: "Post nicht gefunden." });
   }
 
-  const liked = Boolean(req.body?.liked);
+  const requestedLiked = req.body?.liked;
   const likes = getUserLikes(user.id);
-  likes[postId] = liked;
+  const nextLiked = typeof requestedLiked === "boolean" ? requestedLiked : !Boolean(likes[postId]);
+  likes[postId] = nextLiked;
 
-  return res.json({ likes });
+  return res.json({ liked: nextLiked, likes: toLikesPayload(user.id) });
 });
 
 app.post("/api/posts", (req, res) => {
@@ -365,10 +382,12 @@ app.post("/api/posts/:postId/like", (req, res) => {
     return res.status(404).json({ error: "Post nicht gefunden." });
   }
 
+  const requestedLiked = req.body?.liked;
   const likes = getUserLikes(user.id);
-  likes[postId] = !Boolean(likes[postId]);
+  const nextLiked = typeof requestedLiked === "boolean" ? requestedLiked : !Boolean(likes[postId]);
+  likes[postId] = nextLiked;
 
-  return res.json({ liked: likes[postId], likes });
+  return res.json({ liked: nextLiked, likes: toLikesPayload(user.id) });
 });
 
 app.listen(PORT, () => {
