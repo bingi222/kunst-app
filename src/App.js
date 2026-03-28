@@ -158,6 +158,15 @@ function normalizeUsername(username) {
   return username.trim().toLowerCase();
 }
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Datei konnte nicht gelesen werden."));
+    reader.readAsDataURL(file);
+  });
+}
+
 class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -540,17 +549,33 @@ function Post({ post, onProfile, liked, toggleLike }) {
   );
 }
 
-function Profile({ data, onBack, isOwnProfile, onSaveProfile }) {
+function Profile({ data, onBack, isOwnProfile, onSaveProfile, onChangePassword }) {
   const [displayName, setDisplayName] = useState(data?.user || "");
   const [bio, setBio] = useState(data?.bio || "");
   const [avatar, setAvatar] = useState(data?.avatar || "");
   const [successText, setSuccessText] = useState("");
+  const [profileErrorText, setProfileErrorText] = useState("");
+  const [avatarFileError, setAvatarFileError] = useState("");
+  const [avatarFileName, setAvatarFileName] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordErrorText, setPasswordErrorText] = useState("");
+  const [passwordSuccessText, setPasswordSuccessText] = useState("");
 
   useEffect(() => {
     setDisplayName(data?.user || "");
     setBio(data?.bio || "");
     setAvatar(data?.avatar || "");
     setSuccessText("");
+    setProfileErrorText("");
+    setAvatarFileError("");
+    setAvatarFileName("");
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordErrorText("");
+    setPasswordSuccessText("");
   }, [data]);
 
   if (!data) {
@@ -562,6 +587,8 @@ function Profile({ data, onBack, isOwnProfile, onSaveProfile }) {
   }
 
   const canSaveOwnProfile = displayName.trim().length >= 2;
+  const canChangePassword =
+    currentPassword.trim().length > 0 && newPassword.trim().length > 0 && confirmPassword.trim().length > 0;
 
   return (
     <section>
@@ -647,6 +674,12 @@ function Profile({ data, onBack, isOwnProfile, onSaveProfile }) {
                 if (successText) {
                   setSuccessText("");
                 }
+                if (profileErrorText) {
+                  setProfileErrorText("");
+                }
+                if (avatarFileError) {
+                  setAvatarFileError("");
+                }
               }}
               placeholder="https://..."
               style={{
@@ -660,6 +693,56 @@ function Profile({ data, onBack, isOwnProfile, onSaveProfile }) {
               }}
             />
           </label>
+          <label style={{ display: "block", marginBottom: "10px" }}>
+            <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Profilbild Datei</span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) {
+                  return;
+                }
+
+                setAvatarFileError("");
+                setProfileErrorText("");
+                setSuccessText("");
+
+                if (!file.type.startsWith("image/")) {
+                  setAvatarFileError("Bitte nur Bilddateien auswaehlen.");
+                  event.target.value = "";
+                  return;
+                }
+
+                if (file.size > 2 * 1024 * 1024) {
+                  setAvatarFileError("Datei ist zu gross. Maximal 2 MB erlaubt.");
+                  event.target.value = "";
+                  return;
+                }
+
+                try {
+                  const dataUrl = await readFileAsDataUrl(file);
+                  setAvatar(dataUrl);
+                  setAvatarFileName(file.name);
+                } catch (error) {
+                  setAvatarFileError("Datei konnte nicht gelesen werden.");
+                } finally {
+                  event.target.value = "";
+                }
+              }}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                background: "#101010",
+                border: "1px solid #2d2d2d",
+                borderRadius: "8px",
+                color: "#fff",
+                padding: "10px",
+              }}
+            />
+          </label>
+          {avatarFileName && <p style={{ marginTop: "-2px", color: "#bfbfbf", fontSize: "12px" }}>Ausgewaehlt: {avatarFileName}</p>}
+          {avatarFileError && <p style={{ color: "#ff8f8f", marginTop: "-2px" }}>{avatarFileError}</p>}
 
           <button
             type="button"
@@ -671,11 +754,17 @@ function Profile({ data, onBack, isOwnProfile, onSaveProfile }) {
               const nextName = displayName.trim();
               const nextBio = bio.trim();
               const nextAvatar = avatar.trim() || createAvatarFromName(nextName);
-              onSaveProfile({
+              const error = onSaveProfile({
                 displayName: nextName,
                 bio: nextBio,
                 avatar: nextAvatar,
               });
+              if (error) {
+                setProfileErrorText(error);
+                setSuccessText("");
+                return;
+              }
+              setProfileErrorText("");
               setSuccessText("Profil gespeichert.");
             }}
             disabled={!canSaveOwnProfile}
@@ -692,7 +781,131 @@ function Profile({ data, onBack, isOwnProfile, onSaveProfile }) {
           >
             Aenderungen speichern
           </button>
+          {profileErrorText && <p style={{ color: "#ff8f8f", marginBottom: 0 }}>{profileErrorText}</p>}
           {successText && <p style={{ color: "#9aff9a", marginBottom: 0 }}>{successText}</p>}
+
+          <hr style={{ borderColor: "#242424", margin: "16px 0" }} />
+
+          <h4 style={{ marginTop: 0, marginBottom: "10px" }}>Passwort aendern</h4>
+          <label style={{ display: "block", marginBottom: "10px" }}>
+            <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Aktuelles Passwort</span>
+            <input
+              type="password"
+              placeholder="Aktuelles Passwort"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(event) => {
+                setCurrentPassword(event.target.value);
+                if (passwordErrorText) {
+                  setPasswordErrorText("");
+                }
+                if (passwordSuccessText) {
+                  setPasswordSuccessText("");
+                }
+              }}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                background: "#101010",
+                border: "1px solid #2d2d2d",
+                borderRadius: "8px",
+                color: "#fff",
+                padding: "10px",
+              }}
+            />
+          </label>
+
+          <label style={{ display: "block", marginBottom: "10px" }}>
+            <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Neues Passwort</span>
+            <input
+              type="password"
+              placeholder="Neues Passwort"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(event) => {
+                setNewPassword(event.target.value);
+                if (passwordErrorText) {
+                  setPasswordErrorText("");
+                }
+                if (passwordSuccessText) {
+                  setPasswordSuccessText("");
+                }
+              }}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                background: "#101010",
+                border: "1px solid #2d2d2d",
+                borderRadius: "8px",
+                color: "#fff",
+                padding: "10px",
+              }}
+            />
+          </label>
+
+          <label style={{ display: "block", marginBottom: "10px" }}>
+            <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Neues Passwort bestaetigen</span>
+            <input
+              type="password"
+              placeholder="Neues Passwort bestaetigen"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(event) => {
+                setConfirmPassword(event.target.value);
+                if (passwordErrorText) {
+                  setPasswordErrorText("");
+                }
+                if (passwordSuccessText) {
+                  setPasswordSuccessText("");
+                }
+              }}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                background: "#101010",
+                border: "1px solid #2d2d2d",
+                borderRadius: "8px",
+                color: "#fff",
+                padding: "10px",
+              }}
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={() => {
+              const error = onChangePassword({
+                currentPassword,
+                newPassword,
+                confirmPassword,
+              });
+              if (error) {
+                setPasswordErrorText(error);
+                setPasswordSuccessText("");
+                return;
+              }
+              setPasswordErrorText("");
+              setPasswordSuccessText("Passwort wurde aktualisiert.");
+              setCurrentPassword("");
+              setNewPassword("");
+              setConfirmPassword("");
+            }}
+            disabled={!canChangePassword}
+            style={{
+              width: "100%",
+              padding: "10px",
+              borderRadius: "8px",
+              border: "none",
+              background: canChangePassword ? "#fff" : "#666",
+              color: "#000",
+              cursor: canChangePassword ? "pointer" : "not-allowed",
+              fontWeight: 700,
+            }}
+          >
+            Passwort aktualisieren
+          </button>
+          {passwordErrorText && <p style={{ color: "#ff8f8f", marginBottom: 0 }}>{passwordErrorText}</p>}
+          {passwordSuccessText && <p style={{ color: "#9aff9a", marginBottom: 0 }}>{passwordSuccessText}</p>}
         </div>
       )}
 
@@ -835,7 +1048,7 @@ function createOwnProfile(currentUser, posts) {
   };
 }
 
-function AppContent({ currentUser, onLogout, onUpdateProfile }) {
+function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword }) {
   const [current, setCurrent] = useState("feed");
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [likes, setLikes] = useState(() => readStorage(STORAGE_LIKES_KEY, {}));
@@ -949,7 +1162,10 @@ function AppContent({ currentUser, onLogout, onUpdateProfile }) {
           data={activeProfile}
           isOwnProfile={Boolean(activeProfile?.isOwnProfile)}
           onSaveProfile={(profilePatch) => {
-            onUpdateProfile(profilePatch);
+            const error = onUpdateProfile(profilePatch);
+            if (error) {
+              return error;
+            }
             setPosts((previousPosts) =>
               previousPosts.map((post) =>
                 post.ownerId === currentUser.id
@@ -972,7 +1188,9 @@ function AppContent({ currentUser, onLogout, onUpdateProfile }) {
                   }
                 : previousProfile,
             );
+            return "";
           }}
+          onChangePassword={onChangePassword}
           onBack={() => {
             setCurrent("feed");
             setSelectedProfile(null);
@@ -1073,12 +1291,12 @@ export default function App() {
 
   const handleProfileUpdate = ({ displayName, bio, avatar }) => {
     if (!currentUser) {
-      return;
+      return "Du bist nicht eingeloggt.";
     }
 
     const nextDisplayName = (displayName || "").trim();
     if (nextDisplayName.length < 2) {
-      return;
+      return "Anzeigename muss mindestens 2 Zeichen haben.";
     }
 
     setUsers((previousUsers) =>
@@ -1093,6 +1311,45 @@ export default function App() {
           : user,
       ),
     );
+    return "";
+  };
+
+  const handlePasswordChange = ({ currentPassword, newPassword, confirmPassword }) => {
+    if (!currentUser) {
+      return "Du bist nicht eingeloggt.";
+    }
+
+    const currentPasswordValue = (currentPassword || "").trim();
+    const newPasswordValue = (newPassword || "").trim();
+    const confirmPasswordValue = (confirmPassword || "").trim();
+
+    if (!currentPasswordValue || !newPasswordValue || !confirmPasswordValue) {
+      return "Bitte alle Passwort-Felder ausfuellen.";
+    }
+    if (currentPasswordValue !== currentUser.password) {
+      return "Aktuelles Passwort ist nicht korrekt.";
+    }
+    if (newPasswordValue.length < 6) {
+      return "Neues Passwort muss mindestens 6 Zeichen haben.";
+    }
+    if (newPasswordValue !== confirmPasswordValue) {
+      return "Neues Passwort und Bestaetigung stimmen nicht ueberein.";
+    }
+    if (newPasswordValue === currentPasswordValue) {
+      return "Neues Passwort muss sich vom alten unterscheiden.";
+    }
+
+    setUsers((previousUsers) =>
+      previousUsers.map((user) =>
+        user.id === currentUser.id
+          ? {
+              ...user,
+              password: newPasswordValue,
+            }
+          : user,
+      ),
+    );
+    return "";
   };
 
   const logout = () => {
@@ -1102,7 +1359,12 @@ export default function App() {
   return (
     <AppErrorBoundary>
       {currentUser ? (
-        <AppContent currentUser={currentUser} onLogout={logout} onUpdateProfile={handleProfileUpdate} />
+        <AppContent
+          currentUser={currentUser}
+          onLogout={logout}
+          onUpdateProfile={handleProfileUpdate}
+          onChangePassword={handlePasswordChange}
+        />
       ) : (
         <AuthScreen onLogin={handleLogin} onRegister={handleRegister} />
       )}
