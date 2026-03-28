@@ -126,3 +126,75 @@ button:focus-visible,
 .btn-primary:hover {
   filter: brightness(1.05);
 }
+
+.app-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 22px;
+}
+
+.feed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
+}
+
+.artwork-feed-card {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.artwork-feed-media {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.artwork-thumb {
+  position: relative;
+  overflow: hidden;
+}
+
+.artwork-thumb img {
+  transition: transform 320ms ease, opacity 280ms ease;
+}
+
+.artwork-thumb .artwork-overlay {
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.artwork-thumb:hover img,
+.artwork-thumb:focus-within img {
+  transform: scale(1.045);
+}
+
+.artwork-thumb:hover .artwork-overlay,
+.artwork-thumb:focus-within .artwork-overlay {
+  opacity: 1;
+}
+
+.fade-in {
+  animation: fadeInSoft 320ms ease both;
+}
+
+@keyframes fadeInSoft {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .app-main {
+    padding: 16px;
+  }
+
+  .feed-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}

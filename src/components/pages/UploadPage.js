@@ -13,6 +13,15 @@ export default function UploadPage({ onBack, onPost, currentUser, draftImageUrl,
     setImageUrl(String(draftImageUrl || ""));
   }, [draftImageUrl]);
 
+  useEffect(
+    () => () => {
+      if (String(imageUrl || "").startsWith("blob:")) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    },
+    [imageUrl],
+  );
+
   const setDraft = (nextValue) => {
     setImageUrl(nextValue);
     onDraftImageUrlChange(nextValue);

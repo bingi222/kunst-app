@@ -3,7 +3,6 @@ import { normalizeUsername, isEditableTarget, createAvatarFromName } from "./uti
 import { getPasswordStrength } from "./utils/format";
 import usePersistentState from "./hooks/usePersistentState";
 import Header from "./components/layout/Header";
-import BottomNav from "./components/layout/BottomNav";
 import FeedToolbar from "./components/feed/FeedToolbar";
 import PostCard from "./components/feed/PostCard";
 import ActivityView from "./components/activity/ActivityView";
@@ -33,27 +32,27 @@ const TOKENS = {
 
 const styles = {
   app: {
-    background: "#0f1115",
+    background: "#0d1118",
     color: "#f3f4f6",
     minHeight: "100vh",
-    paddingBottom: "96px",
+    paddingBottom: "24px",
   },
   card: {
-    marginBottom: TOKENS.spacing.md,
+    marginBottom: TOKENS.spacing.lg,
     border: "1px solid #232833",
     borderRadius: TOKENS.radius.md,
     overflow: "hidden",
-    background: "#151922",
+    background: "#121722",
     boxShadow: TOKENS.elevation.card,
   },
   imageGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: "2px",
+    gridTemplateColumns: "1fr",
+    gap: "0",
   },
   image: {
     width: "100%",
-    height: "260px",
+    height: "460px",
     objectFit: "cover",
     background: "#1b1f29",
     transition: "transform 220ms ease",
@@ -79,7 +78,7 @@ const styles = {
     borderRadius: TOKENS.radius.pill,
     boxShadow: TOKENS.elevation.soft,
     backdropFilter: "blur(14px)",
-    display: "flex",
+    display: "none",
     justifyContent: "space-around",
     padding: "10px 12px",
     zIndex: 30,
@@ -779,6 +778,19 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     setSortOrder("newest");
   }, [setSearchQuery, setFeedMode, setSortOrder]);
 
+  const handleTabChange = useCallback(
+    (nextTab) => {
+      setCurrent(nextTab);
+      if (nextTab === "activity") {
+        loadNotifications();
+      }
+      if (nextTab !== "profile") {
+        setSelectedProfile(null);
+      }
+    },
+    [loadNotifications],
+  );
+
   useEffect(() => {
     if (current !== "feed" || highlightedPostId === null) {
       return undefined;
@@ -802,10 +814,21 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
 
   return (
     <div style={styles.app}>
-      <Header title="KUNST" currentUser={currentUser} onLogout={onLogout} styles={styles} />
+      <Header
+        title="KUNST"
+        currentUser={currentUser}
+        onLogout={onLogout}
+        currentTab={current}
+        onGoFeed={() => handleTabChange("feed")}
+        onGoUpload={() => handleTabChange("upload")}
+        onGoActivity={() => handleTabChange("activity")}
+        onOpenOwnProfile={openOwnProfile}
+        unreadNotificationsCount={unreadNotificationsCount}
+        styles={styles}
+      />
 
       {current === "feed" && (
-        <main style={{ maxWidth: 1080, margin: "0 auto", padding: "16px" }}>
+        <main style={{ maxWidth: 1220, margin: "0 auto", padding: "28px 20px 40px" }}>
           <FeedToolbar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -859,8 +882,8 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-                gap: "16px",
+                gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
+                gap: "28px",
               }}
             >
               {visiblePosts.map((post) => (
@@ -971,22 +994,6 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
           }}
         />
       )}
-
-      <BottomNav
-        current={current}
-        setCurrent={(nextTab) => {
-          setCurrent(nextTab);
-          if (nextTab === "activity") {
-            loadNotifications();
-          }
-          if (nextTab !== "profile") {
-            setSelectedProfile(null);
-          }
-        }}
-        onOpenOwnProfile={openOwnProfile}
-        unreadNotificationsCount={unreadNotificationsCount}
-        styles={styles}
-      />
     </div>
   );
 }

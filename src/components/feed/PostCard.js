@@ -55,75 +55,64 @@ const PostCard = React.memo(function PostCard({
         boxShadow: isHighlighted ? "0 0 0 1px rgba(139, 92, 246, 0.45)" : styles.card.boxShadow,
       }}
     >
-      <button
-        type="button"
-        onClick={() => onOpenProfile(post)}
-        style={{
-          ...styles.iconBtn,
-          width: "100%",
-          textAlign: "left",
-          padding: "14px 16px 12px",
-          fontWeight: 700,
-          fontSize: "14px",
-        }}
-      >
-        {post.user}
-      </button>
-      {String(post.ownerId || "") === String(currentUserId || "") && (
-        <div style={{ padding: "0 16px 12px" }}>
-          <button
-            type="button"
-            onClick={() => onDeletePost(post.id)}
-            style={{
-              ...styles.iconBtn,
-              fontSize: "12px",
-              textDecoration: "underline",
-              color: "#fca5a5",
-            }}
-            aria-label="Beitrag loeschen"
-          >
-            Beitrag loeschen
-          </button>
-        </div>
-      )}
-
-      <div style={styles.imageGrid}>
-        {post.images.map((image, index) => (
-          <div key={`${post.id}-${index}`} className="artwork-thumb" style={{ position: "relative", overflow: "hidden" }}>
-            <SafeImage
-              src={image}
-              alt={`Artwork ${index + 1} von ${post.user}`}
-              onDoubleClick={() => onToggleLike(post.id)}
-              style={styles.image}
-            />
-            <div className="artwork-overlay" data-image-overlay style={overlayStyle}>
-              <span style={{ fontSize: "12px", fontWeight: 600 }}>{post.user}</span>
-              <span style={{ fontSize: "12px", fontWeight: 600 }}>{liked ? "Geliked" : `${Number(commentCount) || 0} Kommentare`}</span>
-            </div>
+      <div style={{ position: "relative", overflow: "hidden" }}>
+        <SafeImage
+          src={post.images[0]}
+          alt={`Artwork von ${post.user}`}
+          onDoubleClick={() => onToggleLike(post.id)}
+          style={styles.image}
+        />
+        <div className="artwork-overlay" style={overlayStyle}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button
+              type="button"
+              onClick={() => onOpenProfile(post)}
+              style={{
+                ...styles.iconBtn,
+                fontSize: "13px",
+                fontWeight: 700,
+                textDecoration: "none",
+              }}
+            >
+              {post.user}
+            </button>
+            <button
+              type="button"
+              onClick={() => onToggleLike(post.id)}
+              style={styles.iconBtn}
+              aria-label="Like umschalten"
+            >
+              <HeartIcon active={liked} />
+            </button>
+            <span style={{ fontSize: "12px", fontWeight: 600 }}>{liked ? "Geliked" : "Like"}</span>
           </div>
-        ))}
-      </div>
-
-      <div style={{ display: "flex", gap: "18px", padding: "12px 16px" }}>
-        <button
-          type="button"
-          onClick={() => onToggleLike(post.id)}
-          style={styles.iconBtn}
-          aria-label="Like umschalten"
-        >
-          <HeartIcon active={liked} />
-        </button>
-        <button
-          type="button"
-          onClick={() => onToggleComments(post.id)}
-          style={styles.iconBtn}
-          aria-label={commentsAriaLabel}
-        >
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-            <CommentIcon />
-            <span style={{ fontSize: "12px", fontWeight: 700 }}>{commentCount}</span>
-          </span>
-        </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={() => onToggleComments(post.id)}
+              style={styles.iconBtn}
+              aria-label={commentsAriaLabel}
+            >
+              <CommentIcon />
+              <span style={{ marginLeft: "6px", fontSize: "12px", fontWeight: 600 }}>{commentCount}</span>
+            </button>
+            {String(post.ownerId || "") === String(currentUserId || "") && (
+              <button
+                type="button"
+                onClick={() => onDeletePost(post.id)}
+                style={{
+                  ...styles.iconBtn,
+                  fontSize: "12px",
+                  textDecoration: "underline",
+                  color: "#fca5a5",
+                }}
+                aria-label="Beitrag loeschen"
+              >
+                Loeschen
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {isCommentsOpen && (

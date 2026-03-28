@@ -360,7 +360,7 @@ test("allows changing profile password", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
   fireEvent.click(await screen.findByRole("button", { name: "Mein Profil" }));
-  const showButtons = screen.getAllByRole("button", { name: "Anzeigen" });
+  const showButtons = screen.getAllByRole("button", { name: /^Anzeigen|Verbergen$/ });
   expect(showButtons).toHaveLength(3);
   showButtons.forEach((button) => fireEvent.click(button));
   fireEvent.change(screen.getByPlaceholderText("Aktuelles Passwort"), {
@@ -453,6 +453,7 @@ test("allows unliking a previously liked post", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
   await screen.findByRole("button", { name: "Home" });
+  fireEvent.click(screen.getByRole("button", { name: "Filter anzeigen" }));
 
   fireEvent.click(screen.getByRole("button", { name: "Nur Likes" }));
 
@@ -708,6 +709,7 @@ test("persists feed filters and allows reset", async () => {
 
   const searchInput = screen.getByRole("searchbox", { name: "Suche" });
   fireEvent.change(searchInput, { target: { value: "pluesch" } });
+  fireEvent.click(screen.getByRole("button", { name: "Filter anzeigen" }));
   fireEvent.click(screen.getByRole("button", { name: "Nur Likes" }));
 
   fireEvent.click(screen.getByRole("button", { name: "Logout" }));
@@ -722,6 +724,7 @@ test("persists feed filters and allows reset", async () => {
   const persistedSearchInput = await screen.findByRole("searchbox", { name: "Suche" });
   expect(persistedSearchInput).toHaveValue("pluesch");
 
+  fireEvent.click(await screen.findByRole("button", { name: "Filter anzeigen" }));
   fireEvent.click(await screen.findByRole("button", { name: "Filter zuruecksetzen" }));
   expect(screen.getByRole("searchbox", { name: "Suche" })).toHaveValue("");
 });
