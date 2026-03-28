@@ -116,6 +116,14 @@ function normalizeUsername(username) {
   return username.trim().toLowerCase();
 }
 
+function isEditableTarget(target) {
+  if (!target || typeof target !== "object") {
+    return false;
+  }
+  const tagName = String(target.tagName || "").toUpperCase();
+  return Boolean(target.isContentEditable) || tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT";
+}
+
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -520,6 +528,9 @@ function Header({ title, currentUser, onLogout }) {
         <div>
           <b>{title}</b>
           <div style={{ fontSize: "12px", opacity: 0.65, marginTop: "2px" }}>Angemeldet als {currentUser.displayName}</div>
+          <div style={{ fontSize: "11px", opacity: 0.58, marginTop: "3px" }}>
+            Shortcuts: G Feed · U Upload · A Aktivitaet · P Profil · R Aktualisieren
+          </div>
         </div>
         <button
           type="button"
@@ -1872,6 +1883,65 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     setSelectedProfile(ownProfile);
     setCurrent("profile");
   }, [ownProfile]);
+
+  const handleShortcutKeyDown = useCallback(
+    (event) => {
+      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+      if (isEditableTarget(event.target)) {
+        return;
+      }
+      const key = String(event.key || "").toLowerCase();
+      if (!key) {
+        return;
+      }
+
+      if (key === "g") {
+        event.preventDefault();
+        setCurrent("feed");
+        setSelectedProfile(null);
+        return;
+      }
+      if (key === "u") {
+        event.preventDefault();
+        setCurrent("upload");
+        setSelectedProfile(null);
+        return;
+      }
+      if (key === "a") {
+        event.preventDefault();
+        setCurrent("activity");
+        setSelectedProfile(null);
+        loadNotifications();
+        return;
+      }
+      if (key === "p") {
+        event.preventDefault();
+        openOwnProfile();
+        return;
+      }
+      if (key === "r") {
+        event.preventDefault();
+        if (current === "activity") {
+          loadNotifications();
+        } else if (current === "feed") {
+          loadFeed();
+        }
+      }
+    },
+    [current, loadFeed, loadNotifications, openOwnProfile],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+    window.addEventListener("keydown", handleShortcutKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleShortcutKeyDown);
+    };
+  }, [handleShortcutKeyDown]);
 
   const toggleLike = useCallback(async (postId) => {
     const previousLikes = likesRef.current;

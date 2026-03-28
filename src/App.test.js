@@ -645,3 +645,29 @@ test("allows undo after mark all notifications as read", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Rueckgaengig" }));
   expect(await screen.findByRole("button", { name: "Als gelesen markieren" })).toBeInTheDocument();
 });
+
+test("supports keyboard shortcuts for feed refresh and navigation", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  await screen.findByRole("button", { name: "Home" });
+  const fetchCallsBefore = global.fetch.mock.calls.length;
+  fireEvent.keyDown(window, { key: "r" });
+
+  await waitFor(() => {
+    expect(global.fetch.mock.calls.length).toBeGreaterThan(fetchCallsBefore);
+  });
+
+  fireEvent.keyDown(window, { key: "a" });
+  expect(await screen.findByRole("heading", { name: "Aktivitaet" })).toBeInTheDocument();
+
+  fireEvent.keyDown(window, { key: "h" });
+  expect(await screen.findByRole("button", { name: "Home" })).toBeInTheDocument();
+});
