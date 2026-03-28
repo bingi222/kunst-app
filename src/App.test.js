@@ -706,3 +706,38 @@ test("persists feed filters and allows reset", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Filter zuruecksetzen" }));
   expect(screen.getByRole("searchbox", { name: "Suche" })).toHaveValue("");
 });
+
+test("persists comment drafts by post and upload draft image url", async () => {
+  window.localStorage.setItem("kunst-app.comment.drafts.v1", JSON.stringify({ 2: "Entwurf Kommentar" }));
+  window.localStorage.setItem(
+    "kunst-app.upload.draft.v1",
+    JSON.stringify("https://picsum.photos/seed/draft-url/900/600"),
+  );
+
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  await screen.findByRole("button", { name: "Home" });
+  const initialButtons = await screen.findAllByRole("button", { name: "Kommentare anzeigen" });
+  fireEvent.click(initialButtons[0]);
+  expect(await screen.findByDisplayValue("Entwurf Kommentar")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Kommentare ausblenden" }));
+
+  fireEvent.click(screen.getByRole("button", { name: "Upload" }));
+  expect(await screen.findByDisplayValue("https://picsum.photos/seed/draft-url/900/600")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Home" }));
+  const reopenedButtons = await screen.findAllByRole("button", { name: "Kommentare anzeigen" });
+  fireEvent.click(reopenedButtons[0]);
+  expect(await screen.findByDisplayValue("Entwurf Kommentar")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Kommentare ausblenden" }));
+  fireEvent.click(screen.getByRole("button", { name: "Upload" }));
+  expect(screen.getByDisplayValue("https://picsum.photos/seed/draft-url/900/600")).toBeInTheDocument();
+});

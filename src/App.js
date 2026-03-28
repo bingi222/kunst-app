@@ -79,6 +79,8 @@ const STORAGE_AUTH_TOKEN_KEY = "kunst-app.auth.token.v1";
 const STORAGE_FEED_SEARCH_KEY = "kunst-app.feed.search.v1";
 const STORAGE_FEED_MODE_KEY = "kunst-app.feed.mode.v1";
 const STORAGE_FEED_SORT_KEY = "kunst-app.feed.sort.v1";
+const STORAGE_UPLOAD_DRAFT_KEY = "kunst-app.upload.draft.v1";
+const STORAGE_COMMENT_DRAFTS_KEY = "kunst-app.comment.drafts.v1";
 const API_BASE_URL = process.env.REACT_APP_API_URL || "";
 const EMPTY_COMMENTS = [];
 const MARK_ALL_UNDO_WINDOW_MS = 5000;
@@ -1654,11 +1656,15 @@ function Profile({ data, onBack, isOwnProfile, onSaveProfile, onChangePassword }
   );
 }
 
-function Upload({ onBack, onPost, currentUser }) {
-  const [imageUrl, setImageUrl] = useState("");
+function Upload({ onBack, onPost, currentUser, draftImageUrl, onDraftImageUrlChange }) {
+  const [imageUrl, setImageUrl] = useState(() => String(draftImageUrl || ""));
   const [errorText, setErrorText] = useState("");
 
   const canPost = imageUrl.trim().length > 0;
+
+  useEffect(() => {
+    setImageUrl(String(draftImageUrl || ""));
+  }, [draftImageUrl]);
 
   const submitPost = () => {
     const normalized = imageUrl.trim();
@@ -1689,6 +1695,7 @@ function Upload({ onBack, onPost, currentUser }) {
       images: [normalized],
     });
     setImageUrl("");
+    onDraftImageUrlChange("");
     onBack();
   };
 
@@ -1703,7 +1710,9 @@ function Upload({ onBack, onPost, currentUser }) {
         placeholder="Bild-URL einfuegen"
         value={imageUrl}
         onChange={(event) => {
-          setImageUrl(event.target.value);
+          const nextValue = event.target.value;
+          setImageUrl(nextValue);
+          onDraftImageUrlChange(nextValue);
           if (errorText) {
             setErrorText("");
           }
@@ -1723,7 +1732,11 @@ function Upload({ onBack, onPost, currentUser }) {
 
       <button
         type="button"
-        onClick={() => setImageUrl("https://picsum.photos/seed/upload-demo/900/600")}
+        onClick={() => {
+          const demoUrl = "https://picsum.photos/seed/upload-demo/900/600";
+          setImageUrl(demoUrl);
+          onDraftImageUrlChange(demoUrl);
+        }}
         style={{
           ...styles.iconBtn,
           marginTop: "8px",
@@ -1802,6 +1815,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const [lastFeedLoadedAt, setLastFeedLoadedAt] = useState(null);
   const [feedErrorText, setFeedErrorText] = useState("");
   const [isFeedLoading, setIsFeedLoading] = useState(true);
+  const [uploadDraftImageUrl, setUploadDraftImageUrl] = useState(() => readStorage(STORAGE_UPLOAD_DRAFT_KEY, ""));
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const likesRef = useRef(likes);
   const commentsByPostIdRef = useRef(commentsByPostId);
@@ -1822,6 +1836,22 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   useEffect(() => {
     writeStorage(STORAGE_FEED_SORT_KEY, sortOrder);
   }, [sortOrder]);
+
+  useEffect(() => {
+    const savedCommentDrafts = readStorage(STORAGE_COMMENT_DRAFTS_KEY, {});
+    if (savedCommentDrafts && typeof savedCommentDrafts === "object" && !Array.isArray(savedCommentDrafts)) {
+      setCommentInputByPostId(savedCommentDrafts);
+      commentInputByPostIdRef.current = savedCommentDrafts;
+    }
+  }, []);
+
+  useEffect(() => {
+    writeStorage(STORAGE_COMMENT_DRAFTS_KEY, commentInputByPostId);
+  }, [commentInputByPostId]);
+
+  useEffect(() => {
+    writeStorage(STORAGE_UPLOAD_DRAFT_KEY, uploadDraftImageUrl);
+  }, [uploadDraftImageUrl]);
 
   useEffect(() => {
     likesRef.current = likes;
@@ -2071,7 +2101,8 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
         });
       }
       setCommentInputByPostId((previous) => {
-        const nextInputByPostId = { ...previous, [postId]: "" };
+        const nextInputByPostId = { ...previous };
+        delete nextInputByPostId[postId];
         commentInputByPostIdRef.current = nextInputByPostId;
         return nextInputByPostId;
       });
@@ -2396,6 +2427,8 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
       {current === "upload" && (
         <Upload
           currentUser={currentUser}
+          draftImageUrl={uploadDraftImageUrl}
+          onDraftImageUrlChange={setUploadDraftImageUrl}
           onBack={() => setCurrent("feed")}
           onPost={async (newPost) => {
             try {
