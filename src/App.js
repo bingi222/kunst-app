@@ -268,6 +268,10 @@ function createApiClient(token) {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+    deletePost: (postId) =>
+      request(`/api/feed/posts/${postId}`, {
+        method: "DELETE",
+      }),
     toggleLike: (postId, liked) =>
       request(`/api/feed/likes/${postId}`, {
         method: "PUT",
@@ -1092,7 +1096,9 @@ function CommentPanel({
 
 const Post = React.memo(function Post({
   post,
+  currentUserId,
   onOpenProfile,
+  onDeletePost,
   liked,
   onToggleLike,
   postRef,
@@ -1137,6 +1143,23 @@ const Post = React.memo(function Post({
       >
         {post.user}
       </button>
+      {String(post.ownerId || "") === String(currentUserId || "") && (
+        <div style={{ padding: "0 14px 10px" }}>
+          <button
+            type="button"
+            onClick={() => onDeletePost(post.id)}
+            style={{
+              ...styles.iconBtn,
+              fontSize: "12px",
+              textDecoration: "underline",
+              color: "#ff9a9a",
+            }}
+            aria-label="Beitrag loeschen"
+          >
+            Beitrag loeschen
+          </button>
+        </div>
+      )}
 
       <div style={styles.imageGrid}>
         {post.images.map((image, index) => (
@@ -1815,6 +1838,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const [lastFeedLoadedAt, setLastFeedLoadedAt] = useState(null);
   const [feedErrorText, setFeedErrorText] = useState("");
   const [isFeedLoading, setIsFeedLoading] = useState(true);
+  const [deletingPostIds, setDeletingPostIds] = useState({});
   const [uploadDraftImageUrl, setUploadDraftImageUrl] = useState(() => readStorage(STORAGE_UPLOAD_DRAFT_KEY, ""));
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const likesRef = useRef(likes);
@@ -2032,6 +2056,75 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
       setFeedErrorText(error.message || "Like konnte nicht gespeichert werden.");
     }
   }, [apiClient]);
+
+  const deletePost = useCallback(async (postId) => {
+    const normalizedPostId = Number(postId);
+    if (!Number.isFinite(normalizedPostId)) {
+      return;
+    }
+    if (deletingPostIds[normalizedPostId]) {
+      return;
+    }
+    const shouldDelete = typeof window !== "undefined" && typeof window.confirm === "function"
+      ? window.confirm("Diesen Beitrag wirklich loeschen?")
+      : true;
+    if (!shouldDelete) {
+      return;
+    }
+
+    setDeletingPostIds((previous) => ({ ...previous, [normalizedPostId]: true }));
+    setFeedErrorText("");
+    try {
+      await apiClient.deletePost(normalizedPostId);
+      setPosts((previousPosts) => previousPosts.filter((post) => Number(post.id) !== normalizedPostId));
+      setCommentsByPostId((previous) => {
+        const next = { ...previous };
+        delete next[normalizedPostId];
+        commentsByPostIdRef.current = next;
+        return next;
+      });
+      setCommentInputByPostId((previous) => {
+        const next = { ...previous };
+        delete next[normalizedPostId];
+        commentInputByPostIdRef.current = next;
+        return next;
+      });
+      setCommentErrorByPostId((previous) => {
+        const next = { ...previous };
+        delete next[normalizedPostId];
+        commentErrorByPostIdRef.current = next;
+        return next;
+      });
+      setCommentsLoadingByPostId((previous) => {
+        const next = { ...previous };
+        delete next[normalizedPostId];
+        return next;
+      });
+      setCommentSubmittingByPostId((previous) => {
+        const next = { ...previous };
+        delete next[normalizedPostId];
+        return next;
+      });
+      setExpandedCommentsPostId((previous) => (Number(previous) === normalizedPostId ? null : previous));
+      if (Number(highlightedPostId) === normalizedPostId) {
+        setHighlightedPostId(null);
+      }
+      setLikes((previous) => {
+        const next = { ...previous };
+        delete next[normalizedPostId];
+        likesRef.current = next;
+        return next;
+      });
+    } catch (error) {
+      setFeedErrorText(error.message || "Beitrag konnte nicht geloescht werden.");
+    } finally {
+      setDeletingPostIds((previous) => {
+        const next = { ...previous };
+        delete next[normalizedPostId];
+        return next;
+      });
+    }
+  }, [apiClient, deletingPostIds, highlightedPostId]);
 
   const loadCommentsForPost = useCallback(async (postId) => {
     setCommentsLoadingByPostId((previous) => ({ ...previous, [postId]: true }));
@@ -2347,7 +2440,9 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
               <Post
                 key={post.id}
                 post={post}
+                currentUserId={currentUser.id}
                 onOpenProfile={openProfile}
+                onDeletePost={deletePost}
                 liked={Boolean(likes[post.id])}
                 onToggleLike={toggleLike}
                 isHighlighted={Number(post.id) === Number(highlightedPostId)}

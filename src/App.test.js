@@ -181,6 +181,24 @@ beforeEach(() => {
       return createJsonResponse(201, { post: createdPost });
     }
 
+    if (/^\/api\/feed\/posts\/\d+$/.test(endpoint) && method === "DELETE") {
+      if (!isAuthorized) {
+        return createJsonResponse(401, { message: "Nicht autorisiert." });
+      }
+      const postId = Number(endpoint.split("/").pop());
+      const targetPost = mockPosts.find((post) => Number(post.id) === postId);
+      if (!targetPost) {
+        return createJsonResponse(404, { message: "Post nicht gefunden." });
+      }
+      if (targetPost.ownerId !== mockUser.id) {
+        return createJsonResponse(403, { message: "Du darfst nur deine eigenen Beitraege loeschen." });
+      }
+      mockPosts = mockPosts.filter((post) => Number(post.id) !== postId);
+      likedPostIds.delete(postId);
+      commentsByPostId[postId] = [];
+      return createJsonResponse(200, { ok: true });
+    }
+
     if (endpoint === "/api/notifications" && method === "GET") {
       if (!isAuthorized) {
         return createJsonResponse(401, { message: "Nicht autorisiert." });
@@ -305,6 +323,7 @@ beforeEach(() => {
 
 afterEach(() => {
   delete global.fetch;
+  delete window.confirm;
 });
 
 test("renders login screen initially", () => {
@@ -740,4 +759,27 @@ test("persists comment drafts by post and upload draft image url", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Kommentare ausblenden" }));
   fireEvent.click(screen.getByRole("button", { name: "Upload" }));
   expect(screen.getByDisplayValue("https://picsum.photos/seed/draft-url/900/600")).toBeInTheDocument();
+});
+
+test("allows deleting own post from feed", async () => {
+  window.confirm = () => true;
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const firstPost = await screen.findByTestId("post-2");
+  expect(within(firstPost).queryByRole("button", { name: "Beitrag loeschen" })).toBeNull();
+
+  const ownPost = await screen.findByTestId("post-1");
+  fireEvent.click(within(ownPost).getByRole("button", { name: "Beitrag loeschen" }));
+
+  await waitFor(() => {
+    expect(screen.queryByTestId("post-1")).not.toBeInTheDocument();
+  });
 });

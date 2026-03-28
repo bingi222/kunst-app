@@ -458,6 +458,47 @@ app.post("/api/feed/posts", (req, res) => {
   return res.status(201).json({ post: toPostPayload(createdPost) });
 });
 
+app.delete("/api/feed/posts/:postId", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const postId = Number(req.params.postId);
+  if (!Number.isFinite(postId)) {
+    return res.status(400).json({ error: "Ungueltige Post-ID." });
+  }
+
+  const postIndex = posts.findIndex((post) => Number(post.id) === postId);
+  if (postIndex < 0) {
+    return res.status(404).json({ error: "Post nicht gefunden." });
+  }
+  if (posts[postIndex].ownerId !== user.id) {
+    return res.status(403).json({ error: "Nur der Ersteller darf diesen Beitrag loeschen." });
+  }
+
+  posts.splice(postIndex, 1);
+  commentsByPostId.delete(postId);
+
+  likesByUserId.forEach((likes) => {
+    if (likes && Object.prototype.hasOwnProperty.call(likes, postId)) {
+      delete likes[postId];
+    }
+  });
+
+  notificationsByUserId.forEach((notifications, recipientUserId) => {
+    if (!Array.isArray(notifications) || notifications.length === 0) {
+      return;
+    }
+    const filtered = notifications.filter((notification) => Number(notification.postId) !== postId);
+    if (filtered.length !== notifications.length) {
+      notificationsByUserId.set(recipientUserId, filtered);
+    }
+  });
+
+  return res.json({ ok: true, postId });
+});
+
 app.put("/api/feed/likes/:postId", (req, res) => {
   const user = getUserFromAuthHeader(req);
   if (!user) {
