@@ -310,7 +310,9 @@ function AuthScreen({ onLogin, onRegister }) {
   const [mode, setMode] = useState("login");
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [marketingConsent, setMarketingConsent] = useState(true);
   const [errorText, setErrorText] = useState("");
 
   const isRegister = mode === "register";
@@ -318,7 +320,7 @@ function AuthScreen({ onLogin, onRegister }) {
 
   const submitAuth = async (event) => {
     event.preventDefault();
-    const payload = { username, password, displayName };
+    const payload = { username, password, displayName, email, marketingConsent };
     const error = await (isRegister ? onRegister(payload) : onLogin(payload));
     if (error) {
       setErrorText(error);
@@ -377,6 +379,28 @@ function AuthScreen({ onLogin, onRegister }) {
             />
           </label>
         )}
+        {isRegister && (
+          <label style={{ display: "block", marginBottom: "12px" }}>
+            <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>E-Mail (erforderlich)</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="name@beispiel.de"
+              autoComplete="email"
+              required={isRegister}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                background: "#101010",
+                border: "1px solid #2d2d2d",
+                borderRadius: "8px",
+                color: "#fff",
+                padding: "10px",
+              }}
+            />
+          </label>
+        )}
 
         <label style={{ display: "block", marginBottom: "12px" }}>
           <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Username</span>
@@ -421,6 +445,19 @@ function AuthScreen({ onLogin, onRegister }) {
           <p style={{ marginTop: "-2px", marginBottom: "10px", color: registerPasswordStrength.color, fontSize: "12px" }}>
             Passwortstaerke: {registerPasswordStrength.label}
           </p>
+        )}
+        {isRegister && (
+          <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: "10px", fontSize: "12px", color: "#bfb9d7" }}>
+            <input
+              type="checkbox"
+              checked={marketingConsent}
+              onChange={(event) => setMarketingConsent(Boolean(event.target.checked))}
+              style={{ marginTop: "2px" }}
+            />
+            <span>
+              Ich moechte Produkt-News und Werbe-E-Mails erhalten. Meine E-Mail wird fuer Verifizierung und Marketing genutzt.
+            </span>
+          </label>
         )}
 
         {errorText && <p style={{ color: "#ff8f8f", marginBottom: "12px" }}>{errorText}</p>}
@@ -2247,21 +2284,36 @@ export default function App() {
     }
   };
 
-  const handleRegister = async ({ username, password, displayName }) => {
+  const handleRegister = async ({ username, password, displayName, email, marketingConsent }) => {
     const normalizedUsername = normalizeUsername(username || "");
     const cleanPassword = (password || "").trim();
     const cleanDisplayName = (displayName || "").trim() || normalizedUsername;
+    const normalizedEmail = String(email || "")
+      .trim()
+      .toLowerCase();
+    const hasMarketingConsent = marketingConsent === true;
 
     if (!normalizedUsername) {
       return "Bitte einen Username eingeben.";
     }
+    if (!normalizedEmail) {
+      return "Bitte eine E-Mail-Adresse eingeben.";
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return "Bitte eine gueltige E-Mail-Adresse eingeben.";
+    }
     if (cleanPassword.length < 6) {
       return "Passwort muss mindestens 6 Zeichen haben.";
+    }
+    if (!hasMarketingConsent) {
+      return "Bitte E-Mail-Verification und Marketing-Einwilligung bestaetigen.";
     }
 
     try {
       const response = await createApiClient().register({
         username: normalizedUsername,
+        email: normalizedEmail,
+        marketingOptIn: hasMarketingConsent,
         password: cleanPassword,
         displayName: cleanDisplayName,
       });

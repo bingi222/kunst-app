@@ -22,6 +22,9 @@ beforeEach(() => {
   mockUser = {
     id: "u-bingi",
     username: "bingi",
+    email: "bingi@kunst.local",
+    emailVerified: true,
+    marketingConsent: false,
     displayName: "Bingi",
     bio: "Digital minimal art",
     avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Bingi",
@@ -82,10 +85,23 @@ beforeEach(() => {
 
     if (endpoint === "/api/auth/register" && method === "POST") {
       const normalizedUsername = String(body.username || "").trim().toLowerCase();
+      const normalizedEmail = String(body.email || "").trim().toLowerCase();
       const nextDisplayName = String(body.displayName || "").trim() || normalizedUsername;
+      if (!normalizedEmail) {
+        return createJsonResponse(400, { message: "Bitte eine E-Mail-Adresse eingeben." });
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+        return createJsonResponse(400, { message: "Bitte eine gueltige E-Mail-Adresse eingeben." });
+      }
+      if (body.marketingOptIn !== true) {
+        return createJsonResponse(400, { message: "Bitte der Verifizierung und den Marketing-E-Mails zustimmen." });
+      }
       mockUser = {
         id: "u-new",
         username: normalizedUsername,
+        email: normalizedEmail,
+        emailVerified: false,
+        marketingConsent: Boolean(body.marketingOptIn),
         displayName: nextDisplayName,
         bio: "Neues Mitglied bei KUNST",
         avatar: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(nextDisplayName)}`,
@@ -366,11 +382,44 @@ test("shows password strength in register mode", () => {
   render(<App />);
 
   fireEvent.click(screen.getByRole("button", { name: "Noch kein Konto? Jetzt registrieren" }));
+  fireEvent.change(screen.getByPlaceholderText("name@beispiel.de"), {
+    target: { value: "mia@example.com" },
+  });
+  fireEvent.click(screen.getByLabelText(/Produkt-News und Werbe-E-Mails/));
   fireEvent.change(screen.getByPlaceholderText("Mindestens 6 Zeichen"), {
     target: { value: "Test123!" },
   });
 
   expect(screen.getByText(/Passwortstaerke:/)).toBeInTheDocument();
+});
+
+test("requires email and consent for registration", async () => {
+  render(<App />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Noch kein Konto? Jetzt registrieren" }));
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "newuser" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Mindestens 6 Zeichen"), {
+    target: { value: "Test123!" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Registrieren" }));
+
+  expect(await screen.findByText("Bitte eine E-Mail-Adresse eingeben.")).toBeInTheDocument();
+
+  fireEvent.change(screen.getByPlaceholderText("name@beispiel.de"), {
+    target: { value: "ungueltig" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Registrieren" }));
+  expect(await screen.findByText("Bitte eine gueltige E-Mail-Adresse eingeben.")).toBeInTheDocument();
+
+  fireEvent.change(screen.getByPlaceholderText("name@beispiel.de"), {
+    target: { value: "newuser@example.com" },
+  });
+  fireEvent.click(screen.getByLabelText(/Produkt-News und Werbe-E-Mails/));
+  fireEvent.click(screen.getByRole("button", { name: "Registrieren" }));
+
+  expect(await screen.findByText("Bitte E-Mail-Verification und Marketing-Einwilligung bestaetigen.")).toBeInTheDocument();
 });
 
 test("allows unliking a previously liked post", async () => {

@@ -14,6 +14,9 @@ const users = [
   {
     id: "u-bingi",
     username: "bingi",
+    email: "bingi@kunst.app",
+    emailVerified: true,
+    marketingOptIn: true,
     passwordHash: bcrypt.hashSync("kunst123", 10),
     displayName: "Bingi",
     bio: "Digital minimal art",
@@ -22,6 +25,9 @@ const users = [
   {
     id: "u-pluesch",
     username: "pluesch",
+    email: "pluesch@kunst.app",
+    emailVerified: true,
+    marketingOptIn: true,
     passwordHash: bcrypt.hashSync("kunst123", 10),
     displayName: "Pluesch",
     bio: "Abstract emotions",
@@ -30,6 +36,9 @@ const users = [
   {
     id: "u-giream",
     username: "giream",
+    email: "giream@kunst.app",
+    emailVerified: true,
+    marketingOptIn: true,
     passwordHash: bcrypt.hashSync("kunst123", 10),
     displayName: "Giream",
     bio: "Visual storytelling",
@@ -86,10 +95,23 @@ function normalizeUsername(username) {
     .toLowerCase();
 }
 
+function normalizeEmail(email) {
+  return String(email || "")
+    .trim()
+    .toLowerCase();
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
+}
+
 function toPublicUser(user) {
   return {
     id: user.id,
     username: user.username,
+    email: user.email,
+    emailVerified: Boolean(user.emailVerified),
+    marketingOptIn: Boolean(user.marketingOptIn),
     displayName: user.displayName,
     bio: user.bio,
     avatar: user.avatar,
@@ -232,22 +254,39 @@ app.get("/api/health", (req, res) => {
 
 app.post("/api/auth/register", async (req, res) => {
   const username = normalizeUsername(req.body?.username);
+  const email = normalizeEmail(req.body?.email);
   const password = String(req.body?.password || "").trim();
+  const marketingOptIn = req.body?.marketingOptIn === true;
   const displayName = String(req.body?.displayName || "").trim() || username;
 
   if (!username) {
     return res.status(400).json({ error: "Bitte einen Username eingeben." });
   }
+  if (!email) {
+    return res.status(400).json({ error: "Bitte eine E-Mail-Adresse eingeben." });
+  }
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: "Bitte eine gueltige E-Mail-Adresse eingeben." });
+  }
   if (password.length < 6) {
     return res.status(400).json({ error: "Passwort muss mindestens 6 Zeichen haben." });
   }
+  if (!marketingOptIn) {
+    return res.status(400).json({ error: "Bitte der Verifizierung und den Marketing-E-Mails zustimmen." });
+  }
   if (users.some((user) => user.username === username)) {
     return res.status(409).json({ error: "Username ist bereits vergeben." });
+  }
+  if (users.some((user) => user.email === email)) {
+    return res.status(409).json({ error: "E-Mail ist bereits registriert." });
   }
 
   const createdUser = {
     id: `u-${Date.now()}`,
     username,
+    email,
+    emailVerified: false,
+    marketingOptIn: true,
     passwordHash: await bcrypt.hash(password, 10),
     displayName,
     bio: "Neues Mitglied bei KUNST",
@@ -259,6 +298,8 @@ app.post("/api/auth/register", async (req, res) => {
   return res.status(201).json({
     token: signToken(createdUser),
     user: toPublicUser(createdUser),
+    verificationRequired: true,
+    verificationMessage: "Bitte bestaetige deine E-Mail-Adresse. Der Verifizierungslink wurde versendet.",
   });
 });
 
