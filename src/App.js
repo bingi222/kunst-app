@@ -560,6 +560,9 @@ function Profile({ data, onBack, isOwnProfile, onSaveProfile, onChangePassword }
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordErrorText, setPasswordErrorText] = useState("");
   const [passwordSuccessText, setPasswordSuccessText] = useState("");
 
@@ -574,9 +577,44 @@ function Profile({ data, onBack, isOwnProfile, onSaveProfile, onChangePassword }
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
     setPasswordErrorText("");
     setPasswordSuccessText("");
   }, [data]);
+
+  const passwordStrength = useMemo(() => {
+    const value = newPassword.trim();
+    if (!value) {
+      return { label: "Keine Eingabe", color: "#8f8f8f" };
+    }
+
+    let score = 0;
+    if (value.length >= 8) {
+      score += 1;
+    }
+    if (/[A-Z]/.test(value)) {
+      score += 1;
+    }
+    if (/[a-z]/.test(value)) {
+      score += 1;
+    }
+    if (/[0-9]/.test(value)) {
+      score += 1;
+    }
+    if (/[^A-Za-z0-9]/.test(value)) {
+      score += 1;
+    }
+
+    if (value.length < 6 || score <= 1) {
+      return { label: "Schwach", color: "#ff8f8f" };
+    }
+    if (score <= 3) {
+      return { label: "Mittel", color: "#ffd479" };
+    }
+    return { label: "Stark", color: "#9aff9a" };
+  }, [newPassword]);
 
   if (!data) {
     return (
@@ -789,86 +827,140 @@ function Profile({ data, onBack, isOwnProfile, onSaveProfile, onChangePassword }
           <h4 style={{ marginTop: 0, marginBottom: "10px" }}>Passwort aendern</h4>
           <label style={{ display: "block", marginBottom: "10px" }}>
             <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Aktuelles Passwort</span>
-            <input
-              type="password"
-              placeholder="Aktuelles Passwort"
-              autoComplete="current-password"
-              value={currentPassword}
-              onChange={(event) => {
-                setCurrentPassword(event.target.value);
-                if (passwordErrorText) {
-                  setPasswordErrorText("");
-                }
-                if (passwordSuccessText) {
-                  setPasswordSuccessText("");
-                }
-              }}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                background: "#101010",
-                border: "1px solid #2d2d2d",
-                borderRadius: "8px",
-                color: "#fff",
-                padding: "10px",
-              }}
-            />
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                type={showCurrentPassword ? "text" : "password"}
+                placeholder="Aktuelles Passwort"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(event) => {
+                  setCurrentPassword(event.target.value);
+                  if (passwordErrorText) {
+                    setPasswordErrorText("");
+                  }
+                  if (passwordSuccessText) {
+                    setPasswordSuccessText("");
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  width: "100%",
+                  boxSizing: "border-box",
+                  background: "#101010",
+                  border: "1px solid #2d2d2d",
+                  borderRadius: "8px",
+                  color: "#fff",
+                  padding: "10px",
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword((previous) => !previous)}
+                style={{
+                  ...styles.iconBtn,
+                  fontSize: "12px",
+                  border: "1px solid #2d2d2d",
+                  borderRadius: "8px",
+                  padding: "0 10px",
+                  minWidth: "86px",
+                }}
+              >
+                {showCurrentPassword ? "Verbergen" : "Anzeigen"}
+              </button>
+            </div>
           </label>
 
           <label style={{ display: "block", marginBottom: "10px" }}>
             <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Neues Passwort</span>
-            <input
-              type="password"
-              placeholder="Neues Passwort"
-              autoComplete="new-password"
-              value={newPassword}
-              onChange={(event) => {
-                setNewPassword(event.target.value);
-                if (passwordErrorText) {
-                  setPasswordErrorText("");
-                }
-                if (passwordSuccessText) {
-                  setPasswordSuccessText("");
-                }
-              }}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                background: "#101010",
-                border: "1px solid #2d2d2d",
-                borderRadius: "8px",
-                color: "#fff",
-                padding: "10px",
-              }}
-            />
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                type={showNewPassword ? "text" : "password"}
+                placeholder="Neues Passwort"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(event) => {
+                  setNewPassword(event.target.value);
+                  if (passwordErrorText) {
+                    setPasswordErrorText("");
+                  }
+                  if (passwordSuccessText) {
+                    setPasswordSuccessText("");
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  width: "100%",
+                  boxSizing: "border-box",
+                  background: "#101010",
+                  border: "1px solid #2d2d2d",
+                  borderRadius: "8px",
+                  color: "#fff",
+                  padding: "10px",
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword((previous) => !previous)}
+                style={{
+                  ...styles.iconBtn,
+                  fontSize: "12px",
+                  border: "1px solid #2d2d2d",
+                  borderRadius: "8px",
+                  padding: "0 10px",
+                  minWidth: "86px",
+                }}
+              >
+                {showNewPassword ? "Verbergen" : "Anzeigen"}
+              </button>
+            </div>
           </label>
+          <p style={{ marginTop: "-4px", marginBottom: "12px", color: passwordStrength.color, fontSize: "12px" }}>
+            Passwortstaerke: {passwordStrength.label}
+          </p>
 
           <label style={{ display: "block", marginBottom: "10px" }}>
             <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Neues Passwort bestaetigen</span>
-            <input
-              type="password"
-              placeholder="Neues Passwort bestaetigen"
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={(event) => {
-                setConfirmPassword(event.target.value);
-                if (passwordErrorText) {
-                  setPasswordErrorText("");
-                }
-                if (passwordSuccessText) {
-                  setPasswordSuccessText("");
-                }
-              }}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                background: "#101010",
-                border: "1px solid #2d2d2d",
-                borderRadius: "8px",
-                color: "#fff",
-                padding: "10px",
-              }}
-            />
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Neues Passwort bestaetigen"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(event) => {
+                  setConfirmPassword(event.target.value);
+                  if (passwordErrorText) {
+                    setPasswordErrorText("");
+                  }
+                  if (passwordSuccessText) {
+                    setPasswordSuccessText("");
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  width: "100%",
+                  boxSizing: "border-box",
+                  background: "#101010",
+                  border: "1px solid #2d2d2d",
+                  borderRadius: "8px",
+                  color: "#fff",
+                  padding: "10px",
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((previous) => !previous)}
+                style={{
+                  ...styles.iconBtn,
+                  fontSize: "12px",
+                  border: "1px solid #2d2d2d",
+                  borderRadius: "8px",
+                  padding: "0 10px",
+                  minWidth: "86px",
+                }}
+              >
+                {showConfirmPassword ? "Verbergen" : "Anzeigen"}
+              </button>
+            </div>
           </label>
 
           <button

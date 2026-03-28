@@ -39,12 +39,16 @@ test("allows changing profile password", () => {
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
   fireEvent.click(screen.getByRole("button", { name: "Mein Profil" }));
+  const showButtons = screen.getAllByRole("button", { name: "Anzeigen" });
+  expect(showButtons).toHaveLength(3);
+  showButtons.forEach((button) => fireEvent.click(button));
   fireEvent.change(screen.getByPlaceholderText("Aktuelles Passwort"), {
     target: { value: "kunst123" },
   });
   fireEvent.change(screen.getByPlaceholderText("Neues Passwort"), {
     target: { value: "newpass123" },
   });
+  expect(screen.getByText(/Passwortstaerke:/)).toBeInTheDocument();
   fireEvent.change(screen.getByPlaceholderText("Neues Passwort bestaetigen"), {
     target: { value: "newpass123" },
   });
