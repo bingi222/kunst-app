@@ -34,6 +34,7 @@ beforeEach(() => {
       bio: "Digital minimal art",
       avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Bingi",
       images: ["https://picsum.photos/seed/bingi-1/900/600"],
+      commentCount: 1,
       createdAt: Date.now() - 1000,
     },
     {
@@ -43,6 +44,7 @@ beforeEach(() => {
       bio: "Abstract emotions",
       avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch",
       images: ["https://picsum.photos/seed/pluesch-1/900/600"],
+      commentCount: 0,
       createdAt: Date.now(),
     },
   ];
@@ -132,7 +134,11 @@ beforeEach(() => {
       Array.from(likedPostIds).forEach((id) => {
         likes[id] = true;
       });
-      return createJsonResponse(200, { posts: mockPosts, likes });
+      const postsWithCommentCount = mockPosts.map((post) => ({
+        ...post,
+        commentCount: Array.isArray(commentsByPostId[post.id]) ? commentsByPostId[post.id].length : 0,
+      }));
+      return createJsonResponse(200, { posts: postsWithCommentCount, likes });
     }
 
     if (endpoint === "/api/feed/posts" && method === "POST") {
@@ -150,6 +156,7 @@ beforeEach(() => {
         bio: mockUser.bio,
         avatar: mockUser.avatar,
         images: [imageUrl],
+        commentCount: 0,
         createdAt: Date.now(),
       };
       mockPosts = [createdPost, ...mockPosts];
@@ -214,6 +221,9 @@ beforeEach(() => {
         createdAt: Date.now(),
       };
       commentsByPostId[postId] = [...(commentsByPostId[postId] || []), createdComment];
+      mockPosts = mockPosts.map((post) =>
+        Number(post.id) === postId ? { ...post, commentCount: (post.commentCount || 0) + 1 } : post,
+      );
       return createJsonResponse(201, { comment: createdComment });
     }
 
@@ -354,4 +364,21 @@ test("loads and submits comments for a post", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Senden" }));
 
   expect(await screen.findByText("Mega nice!")).toBeInTheDocument();
+});
+
+test("shows comment count immediately in feed", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  await screen.findByRole("button", { name: "Home" });
+  const commentButtons = await screen.findAllByRole("button", { name: "Kommentare anzeigen" });
+  const hasVisibleCountOne = commentButtons.some((button) => (button.textContent || "").includes("1"));
+  expect(hasVisibleCountOne).toBe(true);
 });

@@ -139,6 +139,7 @@ function toLikesPayload(userId) {
 }
 
 function toPostPayload(post) {
+  const comments = getPostComments(post.id);
   return {
     id: post.id,
     user: post.user,
@@ -146,6 +147,7 @@ function toPostPayload(post) {
     bio: post.bio,
     avatar: post.avatar,
     images: Array.isArray(post.images) ? post.images : [],
+    commentCount: comments.length,
   };
 }
 

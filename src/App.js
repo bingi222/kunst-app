@@ -714,6 +714,7 @@ function Post({
   liked,
   toggleLike,
   comments,
+  commentCount,
   isCommentsOpen,
   onToggleComments,
   commentText,
@@ -763,7 +764,7 @@ function Post({
         >
           <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
             <CommentIcon />
-            <span style={{ fontSize: "12px", fontWeight: 700 }}>{comments.length}</span>
+            <span style={{ fontSize: "12px", fontWeight: 700 }}>{commentCount}</span>
           </span>
         </button>
       </div>
@@ -1612,6 +1613,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
                   toggleLike(post.id);
                 }}
                 comments={commentsByPostId[post.id] || []}
+                commentCount={Array.isArray(commentsByPostId[post.id]) ? commentsByPostId[post.id].length : Number(post.commentCount) || 0}
                 isCommentsOpen={expandedCommentsPostId === post.id}
                 onToggleComments={() => {
                   openCommentsForPost(post.id);
