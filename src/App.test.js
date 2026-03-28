@@ -6,6 +6,7 @@ let currentPassword;
 const validToken = "test-token";
 let mockPosts;
 let likedPostIds;
+let commentsByPostId;
 
 function createJsonResponse(status, body) {
   return {
@@ -46,6 +47,20 @@ beforeEach(() => {
     },
   ];
   likedPostIds = new Set([1]);
+  commentsByPostId = {
+    1: [
+      {
+        id: 5001,
+        postId: 1,
+        userId: "u-pluesch",
+        userName: "Pluesch",
+        userAvatar: "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch",
+        text: "Starke Farben!",
+        createdAt: Date.now() - 60_000,
+      },
+    ],
+    2: [],
+  };
 
   global.fetch = jest.fn(async (url, options = {}) => {
     const endpoint = new URL(url, "http://localhost").pathname;
@@ -162,6 +177,46 @@ beforeEach(() => {
       return createJsonResponse(200, { likes });
     }
 
+    if (/^\/api\/feed\/posts\/\d+\/comments$/.test(endpoint) && method === "GET") {
+      if (!isAuthorized) {
+        return createJsonResponse(401, { message: "Nicht autorisiert." });
+      }
+      const postId = Number(endpoint.split("/")[4]);
+      if (!postId || !mockPosts.some((post) => Number(post.id) === postId)) {
+        return createJsonResponse(404, { message: "Post nicht gefunden." });
+      }
+      return createJsonResponse(200, { comments: commentsByPostId[postId] || [] });
+    }
+
+    if (/^\/api\/feed\/posts\/\d+\/comments$/.test(endpoint) && method === "POST") {
+      if (!isAuthorized) {
+        return createJsonResponse(401, { message: "Nicht autorisiert." });
+      }
+      const postId = Number(endpoint.split("/")[4]);
+      if (!postId || !mockPosts.some((post) => Number(post.id) === postId)) {
+        return createJsonResponse(404, { message: "Post nicht gefunden." });
+      }
+      const text = String(body.text || "").trim();
+      if (!text) {
+        return createJsonResponse(400, { message: "Kommentar darf nicht leer sein." });
+      }
+      if (text.length > 300) {
+        return createJsonResponse(400, { message: "Kommentar darf maximal 300 Zeichen haben." });
+      }
+
+      const createdComment = {
+        id: Date.now(),
+        postId,
+        userId: mockUser.id,
+        userName: mockUser.displayName,
+        userAvatar: mockUser.avatar,
+        text,
+        createdAt: Date.now(),
+      };
+      commentsByPostId[postId] = [...(commentsByPostId[postId] || []), createdComment];
+      return createJsonResponse(201, { comment: createdComment });
+    }
+
     return createJsonResponse(404, { message: "Not found" });
   });
 });
@@ -273,4 +328,30 @@ test("allows unliking a previously liked post", async () => {
   fireEvent.click(likeButtons[0]);
 
   expect(await screen.findByText("Keine Inhalte fuer diesen Filter gefunden.")).toBeInTheDocument();
+});
+
+test("loads and submits comments for a post", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  await screen.findByRole("button", { name: "Home" });
+
+  const commentButtons = await screen.findAllByRole("button", { name: "Kommentare anzeigen" });
+  fireEvent.click(commentButtons[0]);
+
+  expect(await screen.findByText("Noch keine Kommentare.")).toBeInTheDocument();
+
+  fireEvent.change(screen.getByPlaceholderText("Schreibe einen Kommentar..."), {
+    target: { value: "Mega nice!" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Senden" }));
+
+  expect(await screen.findByText("Mega nice!")).toBeInTheDocument();
 });

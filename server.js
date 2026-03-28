@@ -77,6 +77,7 @@ const posts = [
 ];
 
 const likesByUserId = new Map();
+const commentsByPostId = new Map();
 
 function normalizeUsername(username) {
   return String(username || "")
@@ -99,6 +100,30 @@ function getUserLikes(userId) {
     likesByUserId.set(userId, {});
   }
   return likesByUserId.get(userId);
+}
+
+function getPostById(postId) {
+  return posts.find((post) => Number(post.id) === Number(postId)) || null;
+}
+
+function getPostComments(postId) {
+  const normalizedPostId = Number(postId);
+  if (!commentsByPostId.has(normalizedPostId)) {
+    commentsByPostId.set(normalizedPostId, []);
+  }
+  return commentsByPostId.get(normalizedPostId);
+}
+
+function toCommentPayload(comment) {
+  return {
+    id: comment.id,
+    postId: comment.postId,
+    userId: comment.userId,
+    userName: comment.userName,
+    userAvatar: comment.userAvatar,
+    text: comment.text,
+    createdAt: comment.createdAt,
+  };
 }
 
 function toLikesPayload(userId) {
@@ -245,6 +270,15 @@ app.put("/api/auth/profile", (req, res) => {
     }
   }
 
+  commentsByPostId.forEach((comments) => {
+    for (let index = 0; index < comments.length; index += 1) {
+      if (comments[index].userId === user.id) {
+        comments[index].userName = user.displayName;
+        comments[index].userAvatar = user.avatar;
+      }
+    }
+  });
+
   return res.json({ user: toPublicUser(user) });
 });
 
@@ -340,6 +374,65 @@ app.put("/api/feed/likes/:postId", (req, res) => {
   likes[postId] = nextLiked;
 
   return res.json({ liked: nextLiked, likes: toLikesPayload(user.id) });
+});
+
+app.get("/api/feed/posts/:postId/comments", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const postId = Number(req.params.postId);
+  if (!Number.isFinite(postId)) {
+    return res.status(400).json({ error: "Ungueltige Post-ID." });
+  }
+
+  const post = getPostById(postId);
+  if (!post) {
+    return res.status(404).json({ error: "Post nicht gefunden." });
+  }
+
+  const comments = getPostComments(post.id);
+  const orderedComments = [...comments].sort((first, second) => Number(first.createdAt) - Number(second.createdAt));
+  return res.json({ comments: orderedComments.map(toCommentPayload) });
+});
+
+app.post("/api/feed/posts/:postId/comments", (req, res) => {
+  const user = getUserFromAuthHeader(req);
+  if (!user) {
+    return res.status(401).json({ error: "Nicht autorisiert." });
+  }
+
+  const postId = Number(req.params.postId);
+  if (!Number.isFinite(postId)) {
+    return res.status(400).json({ error: "Ungueltige Post-ID." });
+  }
+
+  const post = getPostById(postId);
+  if (!post) {
+    return res.status(404).json({ error: "Post nicht gefunden." });
+  }
+
+  const text = String(req.body?.text || "").trim();
+  if (!text) {
+    return res.status(400).json({ error: "Kommentar darf nicht leer sein." });
+  }
+  if (text.length > 300) {
+    return res.status(400).json({ error: "Kommentar darf maximal 300 Zeichen haben." });
+  }
+
+  const comment = {
+    id: Date.now(),
+    postId: post.id,
+    userId: user.id,
+    userName: user.displayName,
+    userAvatar: user.avatar,
+    text,
+    createdAt: Date.now(),
+  };
+  getPostComments(post.id).push(comment);
+
+  return res.status(201).json({ comment: toCommentPayload(comment) });
 });
 
 app.post("/api/posts", (req, res) => {

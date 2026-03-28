@@ -128,6 +128,34 @@ function getPasswordStrength(value) {
   return { label: "Stark", color: "#9aff9a" };
 }
 
+function formatRelativeTime(timestamp) {
+  const createdAt = Number(timestamp);
+  if (!Number.isFinite(createdAt) || createdAt <= 0) {
+    return "gerade eben";
+  }
+
+  const diffMs = Date.now() - createdAt;
+  if (!Number.isFinite(diffMs) || diffMs < 0) {
+    return "gerade eben";
+  }
+
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) {
+    return "gerade eben";
+  }
+  if (minutes < 60) {
+    return `vor ${minutes}m`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `vor ${hours}h`;
+  }
+
+  const days = Math.floor(hours / 24);
+  return `vor ${days}d`;
+}
+
 function createApiClient(token) {
   const request = async (path, options = {}) => {
     const headers = {
@@ -145,7 +173,7 @@ function createApiClient(token) {
 
     const responseBody = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const message = responseBody?.message || "Serverfehler";
+      const message = responseBody?.message || responseBody?.error || "Serverfehler";
       throw new Error(message);
     }
     return responseBody;
@@ -183,6 +211,12 @@ function createApiClient(token) {
       request(`/api/feed/likes/${postId}`, {
         method: "PUT",
         body: JSON.stringify({ liked }),
+      }),
+    getComments: (postId) => request(`/api/feed/posts/${postId}/comments`),
+    createComment: (postId, payload) =>
+      request(`/api/feed/posts/${postId}/comments`, {
+        method: "POST",
+        body: JSON.stringify(payload),
       }),
   };
 }
@@ -567,7 +601,128 @@ function BottomNav({ current, setCurrent, onOpenOwnProfile }) {
   );
 }
 
-function Post({ post, onProfile, liked, toggleLike }) {
+function CommentPanel({
+  comments,
+  isLoading,
+  errorText,
+  commentText,
+  onCommentTextChange,
+  onSubmitComment,
+  isSubmitting,
+}) {
+  const currentLength = commentText.length;
+  const trimmedLength = commentText.trim().length;
+  const canSubmit = trimmedLength > 0 && trimmedLength <= 300 && !isSubmitting;
+
+  return (
+    <div
+      style={{
+        borderTop: "1px solid #1f1f1f",
+        padding: "10px 14px 14px",
+      }}
+    >
+      {isLoading ? (
+        <p style={{ marginTop: 0, marginBottom: "10px", color: "#b7b7b7", fontSize: "13px" }}>
+          Kommentare werden geladen...
+        </p>
+      ) : comments.length === 0 ? (
+        <p style={{ marginTop: 0, marginBottom: "10px", color: "#9b9b9b", fontSize: "13px" }}>
+          Noch keine Kommentare.
+        </p>
+      ) : (
+        <div style={{ display: "grid", gap: "10px", marginBottom: "10px" }}>
+          {comments.map((comment) => (
+            <div key={comment.id} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+              <SafeImage
+                src={comment.userAvatar}
+                alt={`${comment.userName} Avatar`}
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  background: "#111",
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.35 }}>
+                  <strong>{comment.userName}</strong> {comment.text}
+                </p>
+                <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#8f8f8f" }}>
+                  {formatRelativeTime(comment.createdAt)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {errorText && (
+        <p style={{ marginTop: 0, marginBottom: "8px", color: "#ff8f8f", fontSize: "12px" }}>{errorText}</p>
+      )}
+
+      <label style={{ display: "block", marginBottom: "8px" }}>
+        <span style={{ display: "block", marginBottom: "6px", fontSize: "12px", opacity: 0.85 }}>
+          Kommentar schreiben
+        </span>
+        <textarea
+          value={commentText}
+          onChange={(event) => onCommentTextChange(event.target.value)}
+          rows={2}
+          maxLength={300}
+          placeholder="Schreibe einen Kommentar..."
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            background: "#101010",
+            border: "1px solid #2d2d2d",
+            borderRadius: "8px",
+            color: "#fff",
+            padding: "8px 10px",
+            resize: "vertical",
+          }}
+        />
+      </label>
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
+        <span style={{ fontSize: "11px", color: currentLength > 300 ? "#ff8f8f" : "#8f8f8f" }}>{currentLength}/300</span>
+        <button
+          type="button"
+          onClick={onSubmitComment}
+          disabled={!canSubmit}
+          style={{
+            ...styles.iconBtn,
+            border: "1px solid #2e2e2e",
+            borderRadius: "999px",
+            padding: "6px 12px",
+            fontSize: "12px",
+            opacity: canSubmit ? 1 : 0.55,
+            cursor: canSubmit ? "pointer" : "not-allowed",
+          }}
+        >
+          {isSubmitting ? "Senden..." : "Senden"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Post({
+  post,
+  onProfile,
+  liked,
+  toggleLike,
+  comments,
+  isCommentsOpen,
+  onToggleComments,
+  commentText,
+  onCommentTextChange,
+  onSubmitComment,
+  isCommentsLoading,
+  isCommentSubmitting,
+  commentErrorText,
+}) {
   return (
     <article style={styles.card}>
       <button
@@ -602,13 +757,28 @@ function Post({ post, onProfile, liked, toggleLike }) {
         </button>
         <button
           type="button"
-          onClick={() => window.alert("Kommentare kommen spaeter")}
+          onClick={onToggleComments}
           style={styles.iconBtn}
-          aria-label="Kommentare"
+          aria-label={isCommentsOpen ? "Kommentare ausblenden" : "Kommentare anzeigen"}
         >
-          <CommentIcon />
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <CommentIcon />
+            <span style={{ fontSize: "12px", fontWeight: 700 }}>{comments.length}</span>
+          </span>
         </button>
       </div>
+
+      {isCommentsOpen && (
+        <CommentPanel
+          comments={comments}
+          isLoading={isCommentsLoading}
+          errorText={commentErrorText}
+          commentText={commentText}
+          onCommentTextChange={onCommentTextChange}
+          onSubmitComment={onSubmitComment}
+          isSubmitting={isCommentSubmitting}
+        />
+      )}
     </article>
   );
 }
@@ -1209,6 +1379,12 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [likes, setLikes] = useState({});
   const [posts, setPosts] = useState([]);
+  const [commentsByPostId, setCommentsByPostId] = useState({});
+  const [commentsLoadingByPostId, setCommentsLoadingByPostId] = useState({});
+  const [commentSubmittingByPostId, setCommentSubmittingByPostId] = useState({});
+  const [commentErrorByPostId, setCommentErrorByPostId] = useState({});
+  const [commentInputByPostId, setCommentInputByPostId] = useState({});
+  const [expandedCommentsPostId, setExpandedCommentsPostId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [feedMode, setFeedMode] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
@@ -1270,6 +1446,78 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     } catch (error) {
       setLikes(previousLikes);
       setFeedErrorText(error.message || "Like konnte nicht gespeichert werden.");
+    }
+  };
+
+  const loadCommentsForPost = async (postId) => {
+    setCommentsLoadingByPostId((previous) => ({ ...previous, [postId]: true }));
+    setCommentErrorByPostId((previous) => ({ ...previous, [postId]: "" }));
+    try {
+      const response = await apiClient.getComments(postId);
+      setCommentsByPostId((previous) => ({
+        ...previous,
+        [postId]: Array.isArray(response.comments) ? response.comments : [],
+      }));
+    } catch (error) {
+      setCommentErrorByPostId((previous) => ({
+        ...previous,
+        [postId]: error.message || "Kommentare konnten nicht geladen werden.",
+      }));
+    } finally {
+      setCommentsLoadingByPostId((previous) => ({ ...previous, [postId]: false }));
+    }
+  };
+
+  const openCommentsForPost = async (postId) => {
+    if (expandedCommentsPostId === postId) {
+      setExpandedCommentsPostId(null);
+      return;
+    }
+    setExpandedCommentsPostId(postId);
+
+    if (Array.isArray(commentsByPostId[postId])) {
+      return;
+    }
+    await loadCommentsForPost(postId);
+  };
+
+  const submitComment = async (postId) => {
+    const rawText = commentInputByPostId[postId] || "";
+    const text = rawText.trim();
+    if (!text) {
+      setCommentErrorByPostId((previous) => ({
+        ...previous,
+        [postId]: "Kommentar darf nicht leer sein.",
+      }));
+      return;
+    }
+    if (text.length > 300) {
+      setCommentErrorByPostId((previous) => ({
+        ...previous,
+        [postId]: "Kommentar darf maximal 300 Zeichen haben.",
+      }));
+      return;
+    }
+
+    setCommentSubmittingByPostId((previous) => ({ ...previous, [postId]: true }));
+    setCommentErrorByPostId((previous) => ({ ...previous, [postId]: "" }));
+
+    try {
+      const response = await apiClient.createComment(postId, { text });
+      if (response?.comment) {
+        setCommentsByPostId((previous) => ({
+          ...previous,
+          [postId]: [...(previous[postId] || []), response.comment],
+        }));
+      }
+      setCommentInputByPostId((previous) => ({ ...previous, [postId]: "" }));
+    } catch (error) {
+      setCommentErrorByPostId((previous) => ({
+        ...previous,
+        [postId]: error.message || "Kommentar konnte nicht gesendet werden.",
+      }));
+    } finally {
+      setCommentSubmittingByPostId((previous) => ({ ...previous, [postId]: false }));
     }
   };
 
@@ -1363,6 +1611,24 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
                 toggleLike={() => {
                   toggleLike(post.id);
                 }}
+                comments={commentsByPostId[post.id] || []}
+                isCommentsOpen={expandedCommentsPostId === post.id}
+                onToggleComments={() => {
+                  openCommentsForPost(post.id);
+                }}
+                commentText={commentInputByPostId[post.id] || ""}
+                onCommentTextChange={(value) => {
+                  setCommentInputByPostId((previous) => ({ ...previous, [post.id]: value }));
+                  if (commentErrorByPostId[post.id]) {
+                    setCommentErrorByPostId((previous) => ({ ...previous, [post.id]: "" }));
+                  }
+                }}
+                onSubmitComment={() => {
+                  submitComment(post.id);
+                }}
+                isCommentsLoading={Boolean(commentsLoadingByPostId[post.id])}
+                isCommentSubmitting={Boolean(commentSubmittingByPostId[post.id])}
+                commentErrorText={commentErrorByPostId[post.id] || ""}
               />
             ))
           )}
