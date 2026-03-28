@@ -1181,9 +1181,9 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
       setIsFeedLoading(true);
       setFeedErrorText("");
       try {
-        const [postsResponse, likesResponse] = await Promise.all([apiClient.getPosts(), apiClient.getLikes()]);
-        setPosts(Array.isArray(postsResponse.posts) ? postsResponse.posts : []);
-        setLikes(likesResponse.likes || {});
+        const feedResponse = await apiClient.getFeed();
+        setPosts(Array.isArray(feedResponse.posts) ? feedResponse.posts : []);
+        setLikes(feedResponse.likes || {});
       } catch (error) {
         setFeedErrorText(error.message || "Feed konnte nicht geladen werden.");
         setPosts([]);
