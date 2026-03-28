@@ -4,10 +4,38 @@ const AVATAR_BINGI = "https://api.dicebear.com/9.x/initials/svg?seed=Bingi";
 const AVATAR_PLUESCH = "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch";
 const AVATAR_GIREAM = "https://api.dicebear.com/9.x/initials/svg?seed=Giream";
 
+const DEFAULT_USERS = [
+  {
+    id: "u-bingi",
+    username: "bingi",
+    password: "kunst123",
+    displayName: "Bingi",
+    bio: "Digital minimal art",
+    avatar: AVATAR_BINGI,
+  },
+  {
+    id: "u-pluesch",
+    username: "pluesch",
+    password: "kunst123",
+    displayName: "Pluesch",
+    bio: "Abstract emotions",
+    avatar: AVATAR_PLUESCH,
+  },
+  {
+    id: "u-giream",
+    username: "giream",
+    password: "kunst123",
+    displayName: "Giream",
+    bio: "Visual storytelling",
+    avatar: AVATAR_GIREAM,
+  },
+];
+
 const initialPosts = [
   {
     id: 1,
     user: "Bingi",
+    ownerId: "u-bingi",
     bio: "Digital minimal art",
     avatar: AVATAR_BINGI,
     images: [
@@ -19,6 +47,7 @@ const initialPosts = [
   {
     id: 2,
     user: "Pluesch",
+    ownerId: "u-pluesch",
     bio: "Abstract emotions",
     avatar: AVATAR_PLUESCH,
     images: [
@@ -30,6 +59,7 @@ const initialPosts = [
   {
     id: 3,
     user: "Giream",
+    ownerId: "u-giream",
     bio: "Visual storytelling",
     avatar: AVATAR_GIREAM,
     images: [
@@ -88,6 +118,8 @@ const styles = {
 
 const STORAGE_POSTS_KEY = "kunst-app.posts.v1";
 const STORAGE_LIKES_KEY = "kunst-app.likes.v1";
+const STORAGE_USERS_KEY = "kunst-app.users.v1";
+const STORAGE_SESSION_KEY = "kunst-app.session.v1";
 
 function readStorage(key, fallbackValue) {
   if (typeof window === "undefined") {
@@ -115,6 +147,15 @@ function writeStorage(key, value) {
   } catch (error) {
     // Ignore storage errors (e.g. quota/privacy mode).
   }
+}
+
+function createAvatarFromName(name) {
+  const seed = (name || "Kunst").trim();
+  return `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(seed)}`;
+}
+
+function normalizeUsername(username) {
+  return username.trim().toLowerCase();
 }
 
 class AppErrorBoundary extends React.Component {
@@ -146,20 +187,191 @@ class AppErrorBoundary extends React.Component {
   }
 }
 
-function Header({ title }) {
+function AuthScreen({ onLogin, onRegister }) {
+  const [mode, setMode] = useState("login");
+  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorText, setErrorText] = useState("");
+
+  const isRegister = mode === "register";
+
+  const submitAuth = (event) => {
+    event.preventDefault();
+    const payload = { username, password, displayName };
+    const error = isRegister ? onRegister(payload) : onLogin(payload);
+    if (error) {
+      setErrorText(error);
+      return;
+    }
+
+    setErrorText("");
+    setPassword("");
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#000",
+        color: "#fff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px",
+      }}
+    >
+      <form
+        onSubmit={submitAuth}
+        style={{
+          width: "100%",
+          maxWidth: "420px",
+          border: "1px solid #242424",
+          borderRadius: "14px",
+          padding: "22px",
+          background: "#0a0a0a",
+        }}
+      >
+        <h1 style={{ marginTop: 0, marginBottom: "8px" }}>KUNST Login</h1>
+        <p style={{ marginTop: 0, color: "#bdbdbd", fontSize: "14px" }}>
+          {isRegister ? "Neues Konto anlegen" : "Mit Profil anmelden"}
+        </p>
+
+        {isRegister && (
+          <label style={{ display: "block", marginBottom: "12px" }}>
+            <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Anzeigename</span>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+              placeholder="z. B. Mia Art"
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                background: "#101010",
+                border: "1px solid #2d2d2d",
+                borderRadius: "8px",
+                color: "#fff",
+                padding: "10px",
+              }}
+            />
+          </label>
+        )}
+
+        <label style={{ display: "block", marginBottom: "12px" }}>
+          <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Username</span>
+          <input
+            type="text"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            placeholder="z. B. bingi"
+            autoComplete="username"
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              background: "#101010",
+              border: "1px solid #2d2d2d",
+              borderRadius: "8px",
+              color: "#fff",
+              padding: "10px",
+            }}
+          />
+        </label>
+
+        <label style={{ display: "block", marginBottom: "6px" }}>
+          <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Passwort</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete={isRegister ? "new-password" : "current-password"}
+            placeholder={isRegister ? "Mindestens 6 Zeichen" : "Dein Passwort"}
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              background: "#101010",
+              border: "1px solid #2d2d2d",
+              borderRadius: "8px",
+              color: "#fff",
+              padding: "10px",
+            }}
+          />
+        </label>
+
+        {errorText && <p style={{ color: "#ff8f8f", marginBottom: "12px" }}>{errorText}</p>}
+
+        <button
+          type="submit"
+          style={{
+            marginTop: "10px",
+            width: "100%",
+            padding: "11px",
+            borderRadius: "8px",
+            border: "none",
+            background: "#fff",
+            color: "#000",
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          {isRegister ? "Registrieren" : "Anmelden"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMode(isRegister ? "login" : "register");
+            setErrorText("");
+          }}
+          style={{
+            ...styles.iconBtn,
+            marginTop: "10px",
+            fontSize: "13px",
+            textDecoration: "underline",
+          }}
+        >
+          {isRegister ? "Schon ein Konto? Jetzt anmelden" : "Noch kein Konto? Jetzt registrieren"}
+        </button>
+
+        <p style={{ marginBottom: 0, marginTop: "16px", color: "#8f8f8f", fontSize: "12px" }}>
+          Demo-Login: Username <b>bingi</b>, Passwort <b>kunst123</b>
+        </p>
+      </form>
+    </div>
+  );
+}
+
+function Header({ title, currentUser, onLogout }) {
   return (
     <header
       style={{
         position: "sticky",
         top: 0,
         background: "#000",
-        padding: "16px",
+        padding: "14px 16px",
         borderBottom: "1px solid #1f1f1f",
-        textAlign: "center",
         zIndex: 10,
       }}
     >
-      <b>{title}</b>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+        <div>
+          <b>{title}</b>
+          <div style={{ fontSize: "12px", opacity: 0.65, marginTop: "2px" }}>Angemeldet als {currentUser.displayName}</div>
+        </div>
+        <button
+          type="button"
+          onClick={onLogout}
+          style={{
+            ...styles.iconBtn,
+            fontSize: "12px",
+            border: "1px solid #2e2e2e",
+            borderRadius: "999px",
+            padding: "6px 10px",
+          }}
+        >
+          Logout
+        </button>
+      </div>
     </header>
   );
 }
@@ -259,7 +471,7 @@ function SafeImage({ src, alt, style, onDoubleClick }) {
   );
 }
 
-function BottomNav({ current, setCurrent }) {
+function BottomNav({ current, setCurrent, onOpenOwnProfile }) {
   const linkStyle = (tab) => ({
     ...styles.iconBtn,
     fontSize: "14px",
@@ -275,7 +487,7 @@ function BottomNav({ current, setCurrent }) {
       <button type="button" onClick={() => setCurrent("upload")} style={linkStyle("upload")}>
         Upload
       </button>
-      <button type="button" onClick={() => setCurrent("profile")} style={linkStyle("profile")}>
+      <button type="button" onClick={onOpenOwnProfile} style={linkStyle("profile")}>
         Mein Profil
       </button>
     </nav>
@@ -328,7 +540,19 @@ function Post({ post, onProfile, liked, toggleLike }) {
   );
 }
 
-function Profile({ data, onBack }) {
+function Profile({ data, onBack, isOwnProfile, onSaveProfile }) {
+  const [displayName, setDisplayName] = useState(data?.user || "");
+  const [bio, setBio] = useState(data?.bio || "");
+  const [avatar, setAvatar] = useState(data?.avatar || "");
+  const [successText, setSuccessText] = useState("");
+
+  useEffect(() => {
+    setDisplayName(data?.user || "");
+    setBio(data?.bio || "");
+    setAvatar(data?.avatar || "");
+    setSuccessText("");
+  }, [data]);
+
   if (!data) {
     return (
       <div style={{ padding: "20px" }}>
@@ -336,6 +560,8 @@ function Profile({ data, onBack }) {
       </div>
     );
   }
+
+  const canSaveOwnProfile = displayName.trim().length >= 2;
 
   return (
     <section>
@@ -355,21 +581,142 @@ function Profile({ data, onBack }) {
         <p style={{ opacity: 0.7 }}>{data.bio}</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
-        {data.images.map((image, index) => (
-          <SafeImage
-            key={`${data.id}-profile-${index}`}
-            src={image}
-            alt={`Profilbild ${index + 1}`}
-            style={{ width: "100%", height: 180, objectFit: "cover", background: "#161616" }}
-          />
-        ))}
+      {isOwnProfile && (
+        <div
+          style={{
+            margin: "0 20px 20px",
+            padding: "14px",
+            border: "1px solid #272727",
+            borderRadius: "10px",
+            background: "#0d0d0d",
+          }}
+        >
+          <h3 style={{ marginTop: 0 }}>Profil bearbeiten</h3>
+          <label style={{ display: "block", marginBottom: "10px" }}>
+            <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Anzeigename</span>
+            <input
+              value={displayName}
+              onChange={(event) => {
+                setDisplayName(event.target.value);
+                if (successText) {
+                  setSuccessText("");
+                }
+              }}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                background: "#101010",
+                border: "1px solid #2d2d2d",
+                borderRadius: "8px",
+                color: "#fff",
+                padding: "10px",
+              }}
+            />
+          </label>
+
+          <label style={{ display: "block", marginBottom: "10px" }}>
+            <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Bio</span>
+            <textarea
+              value={bio}
+              onChange={(event) => {
+                setBio(event.target.value);
+                if (successText) {
+                  setSuccessText("");
+                }
+              }}
+              rows={3}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                background: "#101010",
+                border: "1px solid #2d2d2d",
+                borderRadius: "8px",
+                color: "#fff",
+                padding: "10px",
+                resize: "vertical",
+              }}
+            />
+          </label>
+
+          <label style={{ display: "block", marginBottom: "10px" }}>
+            <span style={{ display: "block", marginBottom: "6px", fontSize: "13px" }}>Avatar URL (optional)</span>
+            <input
+              value={avatar}
+              onChange={(event) => {
+                setAvatar(event.target.value);
+                if (successText) {
+                  setSuccessText("");
+                }
+              }}
+              placeholder="https://..."
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                background: "#101010",
+                border: "1px solid #2d2d2d",
+                borderRadius: "8px",
+                color: "#fff",
+                padding: "10px",
+              }}
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!canSaveOwnProfile) {
+                return;
+              }
+
+              const nextName = displayName.trim();
+              const nextBio = bio.trim();
+              const nextAvatar = avatar.trim() || createAvatarFromName(nextName);
+              onSaveProfile({
+                displayName: nextName,
+                bio: nextBio,
+                avatar: nextAvatar,
+              });
+              setSuccessText("Profil gespeichert.");
+            }}
+            disabled={!canSaveOwnProfile}
+            style={{
+              width: "100%",
+              padding: "10px",
+              borderRadius: "8px",
+              border: "none",
+              background: canSaveOwnProfile ? "#fff" : "#666",
+              color: "#000",
+              cursor: canSaveOwnProfile ? "pointer" : "not-allowed",
+              fontWeight: 700,
+            }}
+          >
+            Aenderungen speichern
+          </button>
+          {successText && <p style={{ color: "#9aff9a", marginBottom: 0 }}>{successText}</p>}
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px", padding: "0 20px 20px" }}>
+        {data.images.length === 0 ? (
+          <div style={{ border: "1px dashed #2d2d2d", borderRadius: "8px", padding: "16px", color: "#b7b7b7" }}>
+            Noch keine hochgeladenen Bilder.
+          </div>
+        ) : (
+          data.images.map((image, index) => (
+            <SafeImage
+              key={`${data.id}-profile-${index}`}
+              src={image}
+              alt={`Profilbild ${index + 1}`}
+              style={{ width: "100%", height: 180, objectFit: "cover", background: "#161616" }}
+            />
+          ))
+        )}
       </div>
     </section>
   );
 }
 
-function Upload({ onBack, onPost }) {
+function Upload({ onBack, onPost, currentUser }) {
   const [imageUrl, setImageUrl] = useState("");
   const [errorText, setErrorText] = useState("");
 
@@ -397,9 +744,10 @@ function Upload({ onBack, onPost }) {
     setErrorText("");
     onPost({
       id: Date.now(),
-      user: "Bingi",
-      bio: "Digital minimal art",
-      avatar: AVATAR_BINGI,
+      ownerId: currentUser.id,
+      user: currentUser.displayName,
+      bio: currentUser.bio,
+      avatar: currentUser.avatar,
       images: [normalized],
     });
     setImageUrl("");
@@ -470,7 +818,24 @@ function Upload({ onBack, onPost }) {
   );
 }
 
-function AppContent() {
+function createOwnProfile(currentUser, posts) {
+  const ownImages = posts
+    .filter((post) => post.ownerId === currentUser.id)
+    .flatMap((post) => post.images)
+    .slice(0, 20);
+
+  return {
+    id: currentUser.id,
+    user: currentUser.displayName,
+    ownerId: currentUser.id,
+    bio: currentUser.bio,
+    avatar: currentUser.avatar,
+    images: ownImages,
+    isOwnProfile: true,
+  };
+}
+
+function AppContent({ currentUser, onLogout, onUpdateProfile }) {
   const [current, setCurrent] = useState("feed");
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [likes, setLikes] = useState(() => readStorage(STORAGE_LIKES_KEY, {}));
@@ -485,11 +850,20 @@ function AppContent() {
   const [feedMode, setFeedMode] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
 
-  const fallbackProfile = useMemo(() => posts[0] || null, [posts]);
-  const activeProfile = selectedProfile || fallbackProfile;
+  const ownProfile = useMemo(() => createOwnProfile(currentUser, posts), [currentUser, posts]);
+  const activeProfile = selectedProfile && !selectedProfile.isOwnProfile ? selectedProfile : ownProfile;
 
   const openProfile = (post) => {
-    setSelectedProfile(post);
+    const profileData = {
+      ...post,
+      isOwnProfile: post.ownerId === currentUser.id,
+    };
+    setSelectedProfile(profileData);
+    setCurrent("profile");
+  };
+
+  const openOwnProfile = () => {
+    setSelectedProfile(ownProfile);
     setCurrent("profile");
   };
 
@@ -532,7 +906,7 @@ function AppContent() {
 
   return (
     <div style={styles.app}>
-      <Header title="KUNST" />
+      <Header title="KUNST" currentUser={currentUser} onLogout={onLogout} />
 
       {current === "feed" && (
         <main style={{ maxWidth: 640, margin: "0 auto", padding: "14px" }}>
@@ -570,24 +944,168 @@ function AppContent() {
         </main>
       )}
 
-      {current === "profile" && <Profile data={activeProfile} onBack={() => setCurrent("feed")} />}
+      {current === "profile" && (
+        <Profile
+          data={activeProfile}
+          isOwnProfile={Boolean(activeProfile?.isOwnProfile)}
+          onSaveProfile={(profilePatch) => {
+            onUpdateProfile(profilePatch);
+            setPosts((previousPosts) =>
+              previousPosts.map((post) =>
+                post.ownerId === currentUser.id
+                  ? {
+                      ...post,
+                      user: profilePatch.displayName,
+                      bio: profilePatch.bio,
+                      avatar: profilePatch.avatar,
+                    }
+                  : post,
+              ),
+            );
+            setSelectedProfile((previousProfile) =>
+              previousProfile
+                ? {
+                    ...previousProfile,
+                    user: profilePatch.displayName,
+                    bio: profilePatch.bio,
+                    avatar: profilePatch.avatar,
+                  }
+                : previousProfile,
+            );
+          }}
+          onBack={() => {
+            setCurrent("feed");
+            setSelectedProfile(null);
+          }}
+        />
+      )}
 
       {current === "upload" && (
         <Upload
+          currentUser={currentUser}
           onBack={() => setCurrent("feed")}
           onPost={(newPost) => setPosts((previous) => [newPost, ...previous])}
         />
       )}
 
-      <BottomNav current={current} setCurrent={setCurrent} />
+      <BottomNav
+        current={current}
+        setCurrent={(nextTab) => {
+          setCurrent(nextTab);
+          if (nextTab !== "profile") {
+            setSelectedProfile(null);
+          }
+        }}
+        onOpenOwnProfile={openOwnProfile}
+      />
     </div>
   );
 }
 
 export default function App() {
+  const [users, setUsers] = useState(() => {
+    const storedUsers = readStorage(STORAGE_USERS_KEY, DEFAULT_USERS);
+    if (!Array.isArray(storedUsers) || storedUsers.length === 0) {
+      return DEFAULT_USERS;
+    }
+    return storedUsers;
+  });
+  const [sessionUsername, setSessionUsername] = useState(() => readStorage(STORAGE_SESSION_KEY, ""));
+
+  const currentUser = useMemo(
+    () => users.find((user) => user.username === sessionUsername) || null,
+    [users, sessionUsername],
+  );
+
+  useEffect(() => {
+    writeStorage(STORAGE_USERS_KEY, users);
+  }, [users]);
+
+  useEffect(() => {
+    writeStorage(STORAGE_SESSION_KEY, sessionUsername);
+  }, [sessionUsername]);
+
+  const handleLogin = ({ username, password }) => {
+    const normalizedUsername = normalizeUsername(username || "");
+    const cleanPassword = (password || "").trim();
+
+    if (!normalizedUsername || !cleanPassword) {
+      return "Bitte Username und Passwort eingeben.";
+    }
+
+    const matchedUser = users.find((user) => user.username === normalizedUsername);
+    if (!matchedUser || matchedUser.password !== cleanPassword) {
+      return "Login fehlgeschlagen. Bitte Daten pruefen.";
+    }
+
+    setSessionUsername(matchedUser.username);
+    return "";
+  };
+
+  const handleRegister = ({ username, password, displayName }) => {
+    const normalizedUsername = normalizeUsername(username || "");
+    const cleanPassword = (password || "").trim();
+    const cleanDisplayName = (displayName || "").trim() || normalizedUsername;
+
+    if (!normalizedUsername) {
+      return "Bitte einen Username eingeben.";
+    }
+    if (cleanPassword.length < 6) {
+      return "Passwort muss mindestens 6 Zeichen haben.";
+    }
+    if (users.some((user) => user.username === normalizedUsername)) {
+      return "Username ist bereits vergeben.";
+    }
+
+    const createdUser = {
+      id: `u-${Date.now()}`,
+      username: normalizedUsername,
+      password: cleanPassword,
+      displayName: cleanDisplayName,
+      bio: "Neues Mitglied bei KUNST",
+      avatar: createAvatarFromName(cleanDisplayName),
+    };
+
+    setUsers((previous) => [createdUser, ...previous]);
+    setSessionUsername(createdUser.username);
+    return "";
+  };
+
+  const handleProfileUpdate = ({ displayName, bio, avatar }) => {
+    if (!currentUser) {
+      return;
+    }
+
+    const nextDisplayName = (displayName || "").trim();
+    if (nextDisplayName.length < 2) {
+      return;
+    }
+
+    setUsers((previousUsers) =>
+      previousUsers.map((user) =>
+        user.id === currentUser.id
+          ? {
+              ...user,
+              displayName: nextDisplayName,
+              bio: (bio || "").trim(),
+              avatar: (avatar || "").trim() || createAvatarFromName(nextDisplayName),
+            }
+          : user,
+      ),
+    );
+  };
+
+  const logout = () => {
+    setSessionUsername("");
+  };
+
   return (
     <AppErrorBoundary>
-      <AppContent />
+      {currentUser ? (
+        <AppContent currentUser={currentUser} onLogout={logout} onUpdateProfile={handleProfileUpdate} />
+      ) : (
+        <AuthScreen onLogin={handleLogin} onRegister={handleRegister} />
+      )}
     </AppErrorBoundary>
   );
 }
