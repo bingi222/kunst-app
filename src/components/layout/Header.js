@@ -36,6 +36,7 @@ export default function Header({
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const menuToggleRef = useRef(null);
   const profileButtonStyle = navBtnStyle(currentTab === "profile");
 
   useEffect(() => {
@@ -44,7 +45,8 @@ export default function Header({
     }
 
     const handleDocumentClick = (event) => {
-      if (!menuRef.current?.contains(event.target)) {
+      const target = event.target;
+      if (!menuRef.current?.contains(target) && !menuToggleRef.current?.contains(target)) {
         setIsMenuOpen(false);
       }
     };
@@ -54,10 +56,10 @@ export default function Header({
       }
     };
 
-    document.addEventListener("mousedown", handleDocumentClick);
+    document.addEventListener("pointerdown", handleDocumentClick);
     window.addEventListener("keydown", handleEscape);
     return () => {
-      document.removeEventListener("mousedown", handleDocumentClick);
+      document.removeEventListener("pointerdown", handleDocumentClick);
       window.removeEventListener("keydown", handleEscape);
     };
   }, [isMenuOpen]);
@@ -163,10 +165,29 @@ export default function Header({
           </button>
         </div>
 
-        <div style={{ position: "relative" }} ref={menuRef}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+          <button
+            type="button"
+            onClick={onLogout}
+            style={{
+              height: "36px",
+              borderRadius: "999px",
+              border: "1px solid #3a3a3a",
+              background: "#1a1a1a",
+              color: "rgba(255, 255, 255, 0.9)",
+              padding: "0 12px",
+              fontSize: "12px",
+              cursor: "pointer",
+            }}
+            aria-label="Sofort ausloggen"
+          >
+            Logout
+          </button>
+          <div style={{ position: "relative" }} ref={menuRef}>
           <button
             type="button"
             onClick={() => setIsMenuOpen((previous) => !previous)}
+            ref={menuToggleRef}
             style={{
               minWidth: "36px",
               width: "36px",
@@ -268,12 +289,14 @@ export default function Header({
                   setIsMenuOpen(false);
                   onLogout();
                 }}
+                aria-label="Logout aus Menue"
                 style={{ ...navBtnStyle(false), width: "100%" }}
               >
                 Logout
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
     </header>

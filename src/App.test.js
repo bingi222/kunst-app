@@ -358,6 +358,24 @@ test("allows demo user login and shows app navigation", async () => {
   expect(await screen.findByRole("button", { name: "Upload" })).toBeInTheDocument();
 });
 
+test("opens user menu from avatar button and logs out", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const menuButton = await screen.findByRole("button", { name: "Benutzermenue oeffnen" });
+  fireEvent.click(menuButton);
+  const logoutFromMenu = await screen.findByRole("button", { name: "Logout aus Menue" });
+  fireEvent.click(logoutFromMenu);
+  expect(await screen.findByRole("heading", { name: "KUNST Login" })).toBeInTheDocument();
+});
+
 test("opens own profile from nav and allows logout from user menu", async () => {
   render(<App />);
 
@@ -373,8 +391,7 @@ test("opens own profile from nav and allows logout from user menu", async () => 
   expect(await screen.findByText("Deine Werke")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Benutzermenue oeffnen" }));
-  const logoutButtons = screen.getAllByRole("button", { name: "Logout" });
-  fireEvent.click(logoutButtons[logoutButtons.length - 1]);
+  fireEvent.click(screen.getByRole("button", { name: "Logout aus Menue" }));
   expect(await screen.findByRole("heading", { name: "KUNST Login" })).toBeInTheDocument();
 });
 
@@ -426,8 +443,7 @@ test("allows changing profile password", async () => {
 
   expect(await screen.findByText("Passwort wurde aktualisiert.")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Benutzermenue oeffnen" }));
-  const menuLogoutButtons = screen.getAllByRole("button", { name: "Logout" });
-  fireEvent.click(menuLogoutButtons[0]);
+  fireEvent.click(screen.getByRole("button", { name: "Logout aus Menue" }));
 
   fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
     target: { value: "bingi" },
@@ -783,8 +799,7 @@ test("persists feed filters and allows reset", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Nur Likes" }));
 
   fireEvent.click(screen.getByRole("button", { name: "Benutzermenue oeffnen" }));
-  const persistedFiltersLogoutButtons = screen.getAllByRole("button", { name: "Logout" });
-  fireEvent.click(persistedFiltersLogoutButtons[0]);
+  fireEvent.click(screen.getByRole("button", { name: "Logout aus Menue" }));
   fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
     target: { value: "bingi" },
   });
