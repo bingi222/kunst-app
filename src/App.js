@@ -181,7 +181,7 @@ function createApiClient(token) {
       }),
     getFeed: () => request("/api/feed"),
     toggleLike: (postId, liked) =>
-      request(`/api/feed/likes/${postId}`, {
+      request(`/api/feed/likes/${encodeURIComponent(String(postId))}`, {
         method: "PUT",
         body: JSON.stringify({ liked }),
       }),
@@ -438,7 +438,22 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     if (profileWorks.length === 0) {
       return getEffectiveLikeCount(activeProfile);
     }
-    return profileWorks.reduce((sum, work) => sum + getEffectiveLikeCount(work), 0);
+    return profileWorks.reduce((sum, work) => {
+      const baseLikeCount = getPostBaseLikeCount(work);
+      const workIdKey = String(work?.id ?? "");
+      if (!workIdKey) {
+        return sum + baseLikeCount;
+      }
+      const workImageCount =
+        Array.isArray(work?.images) && work.images.length > 0 ? work.images.length : 1;
+      const candidateKeys = [workIdKey];
+      for (let index = 0; index < workImageCount; index += 1) {
+        candidateKeys.push(`${workIdKey}:${index}`);
+      }
+      const isLikedNow = candidateKeys.some((key) => Boolean(likes[key]));
+      const wasLikedInitially = candidateKeys.some((key) => Boolean(initialLikes[key]));
+      return sum + Math.max(0, baseLikeCount + (isLikedNow ? 1 : 0) - (wasLikedInitially ? 1 : 0));
+    }, 0);
   }, [activeProfile, getEffectiveLikeCount]);
 
   const toggleFollowArtist = useCallback((artistKey) => {
@@ -713,17 +728,14 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
       setLikes(optimisticLikes);
       setLikePendingByPostId((previous) => ({ ...previous, [postIdKey]: true }));
 
-      const numericPostId = Number(postIdKey);
-      if (!Number.isFinite(numericPostId)) {
-        setLikePendingByPostId((previous) => ({ ...previous, [postIdKey]: false }));
-        return;
-      }
-
       try {
-        const response = await apiClient.toggleLike(numericPostId, nextLiked);
-        const serverLikes = normalizeLikesMap(response?.likes || {});
-        likesRef.current = serverLikes;
-        setLikes(serverLikes);
+        const response = await apiClient.toggleLike(postIdKey, nextLiked);
+        const serverLikesRaw = response?.likes;
+        const serverLikes = normalizeLikesMap(serverLikesRaw);
+        const hasValidLikesMap = serverLikesRaw && typeof serverLikesRaw === "object" && !Array.isArray(serverLikesRaw);
+        const mergedLikes = hasValidLikesMap ? { ...optimisticLikes, ...serverLikes } : optimisticLikes;
+        likesRef.current = mergedLikes;
+        setLikes(mergedLikes);
       } catch (error) {
         likesRef.current = previousLikesSnapshot;
         setLikes(previousLikesSnapshot);
