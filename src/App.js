@@ -115,9 +115,7 @@ const STORAGE_FEED_SEARCH_KEY = "kunst-app.feed.search.v1";
 const STORAGE_FEED_MODE_KEY = "kunst-app.feed.mode.v1";
 const STORAGE_FEED_SORT_KEY = "kunst-app.feed.sort.v1";
 const STORAGE_UPLOAD_DRAFT_KEY = "kunst-app.upload.draft.v1";
-const STORAGE_COMMENT_DRAFTS_KEY = "kunst-app.comment.drafts.v1";
 const API_BASE_URL = process.env.REACT_APP_API_URL || "";
-const EMPTY_COMMENTS = [];
 const MARK_ALL_UNDO_WINDOW_MS = 5000;
 const SESSION_BOOT_TIMEOUT_MS = 5000;
 
@@ -172,15 +170,6 @@ function createApiClient(token) {
         method: "POST",
         body: JSON.stringify(payload),
       }),
-    deletePost: (postId) =>
-      request(`/api/feed/posts/${postId}`, {
-        method: "DELETE",
-      }),
-    toggleLike: (postId, liked) =>
-      request(`/api/feed/likes/${postId}`, {
-        method: "PUT",
-        body: JSON.stringify({ liked }),
-      }),
     getNotifications: () => request("/api/notifications"),
     markAllNotificationsRead: () =>
       request("/api/notifications/read-all", {
@@ -189,12 +178,6 @@ function createApiClient(token) {
     markNotificationRead: (notificationId) =>
       request(`/api/notifications/${notificationId}/read`, {
         method: "PUT",
-      }),
-    getComments: (postId) => request(`/api/feed/posts/${postId}/comments`),
-    createComment: (postId, payload) =>
-      request(`/api/feed/posts/${postId}/comments`, {
-        method: "POST",
-        body: JSON.stringify(payload),
       }),
   };
 }
@@ -254,51 +237,23 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
   const [notificationsErrorText, setNotificationsErrorText] = useState("");
   const [showUndoMarkAll, setShowUndoMarkAll] = useState(false);
-  const [commentsByPostId, setCommentsByPostId] = useState({});
-  const [commentsLoadingByPostId, setCommentsLoadingByPostId] = useState({});
-  const [commentSubmittingByPostId, setCommentSubmittingByPostId] = useState({});
-  const [commentErrorByPostId, setCommentErrorByPostId] = useState({});
-  const [commentInputByPostId, setCommentInputByPostId] = usePersistentState(STORAGE_COMMENT_DRAFTS_KEY, {});
-  const [expandedCommentsPostId, setExpandedCommentsPostId] = useState(null);
   const [highlightedPostId, setHighlightedPostId] = useState(null);
   const [showFeedFilters, setShowFeedFilters] = useState(false);
   const [searchQuery, setSearchQuery] = usePersistentState(STORAGE_FEED_SEARCH_KEY, "");
   const [feedMode, setFeedMode] = usePersistentState(STORAGE_FEED_MODE_KEY, "all");
   const [sortOrder, setSortOrder] = usePersistentState(STORAGE_FEED_SORT_KEY, "newest");
-  const [lastFeedLoadedAt, setLastFeedLoadedAt] = useState(null);
   const [feedErrorText, setFeedErrorText] = useState("");
   const [isFeedLoading, setIsFeedLoading] = useState(true);
-  const [deletingPostIds, setDeletingPostIds] = useState({});
   const [uploadDraftImageUrl, setUploadDraftImageUrl] = usePersistentState(STORAGE_UPLOAD_DRAFT_KEY, "");
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const likesRef = useRef(likes);
-  const commentsByPostIdRef = useRef(commentsByPostId);
-  const expandedCommentsPostIdRef = useRef(expandedCommentsPostId);
-  const commentInputByPostIdRef = useRef(commentInputByPostId);
-  const commentErrorByPostIdRef = useRef(commentErrorByPostId);
   const pendingMarkAllUndoRef = useRef(null);
   const pendingMarkAllTimerRef = useRef(null);
 
   useEffect(() => {
     likesRef.current = likes;
   }, [likes]);
-
-  useEffect(() => {
-    commentsByPostIdRef.current = commentsByPostId;
-  }, [commentsByPostId]);
-
-  useEffect(() => {
-    expandedCommentsPostIdRef.current = expandedCommentsPostId;
-  }, [expandedCommentsPostId]);
-
-  useEffect(() => {
-    commentInputByPostIdRef.current = commentInputByPostId;
-  }, [commentInputByPostId]);
-
-  useEffect(() => {
-    commentErrorByPostIdRef.current = commentErrorByPostId;
-  }, [commentErrorByPostId]);
 
   useEffect(
     () => () => {
@@ -319,7 +274,6 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
       const nextLikes = feedResponse.likes || {};
       setLikes(nextLikes);
       likesRef.current = nextLikes;
-      setLastFeedLoadedAt(Date.now());
     } catch (error) {
       setFeedErrorText(error.message || "Feed konnte nicht geladen werden.");
       setPosts([]);
@@ -430,207 +384,6 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
       window.removeEventListener("keydown", handleShortcutKeyDown);
     };
   }, [handleShortcutKeyDown]);
-
-  const toggleLike = useCallback(
-    async (postId) => {
-      const previousLikes = likesRef.current;
-      const previousValue = Boolean(previousLikes[postId]);
-      const optimisticLikes = { ...previousLikes };
-      if (previousValue) {
-        delete optimisticLikes[postId];
-      } else {
-        optimisticLikes[postId] = true;
-      }
-      setLikes(optimisticLikes);
-      likesRef.current = optimisticLikes;
-      setFeedErrorText("");
-      try {
-        const response = await apiClient.toggleLike(postId, !previousValue);
-        if (typeof response?.liked === "boolean") {
-          setLikes((previous) => {
-            const nextLikes = { ...previous };
-            if (response.liked) {
-              nextLikes[postId] = true;
-            } else {
-              delete nextLikes[postId];
-            }
-            likesRef.current = nextLikes;
-            return nextLikes;
-          });
-        }
-      } catch (error) {
-        setLikes(previousLikes);
-        likesRef.current = previousLikes;
-        setFeedErrorText(error.message || "Like konnte nicht gespeichert werden.");
-      }
-    },
-    [apiClient],
-  );
-
-  const deletePost = useCallback(
-    async (postId) => {
-      const normalizedPostId = Number(postId);
-      if (!Number.isFinite(normalizedPostId)) {
-        return;
-      }
-      if (deletingPostIds[normalizedPostId]) {
-        return;
-      }
-      const shouldDelete =
-        typeof window !== "undefined" && typeof window.confirm === "function"
-          ? window.confirm("Diesen Beitrag wirklich loeschen?")
-          : true;
-      if (!shouldDelete) {
-        return;
-      }
-
-      setDeletingPostIds((previous) => ({ ...previous, [normalizedPostId]: true }));
-      setFeedErrorText("");
-      try {
-        await apiClient.deletePost(normalizedPostId);
-        setPosts((previousPosts) => previousPosts.filter((post) => Number(post.id) !== normalizedPostId));
-        setCommentsByPostId((previous) => {
-          const next = { ...previous };
-          delete next[normalizedPostId];
-          commentsByPostIdRef.current = next;
-          return next;
-        });
-        setCommentInputByPostId((previous) => {
-          const next = { ...previous };
-          delete next[normalizedPostId];
-          commentInputByPostIdRef.current = next;
-          return next;
-        });
-        setCommentErrorByPostId((previous) => {
-          const next = { ...previous };
-          delete next[normalizedPostId];
-          commentErrorByPostIdRef.current = next;
-          return next;
-        });
-        setCommentsLoadingByPostId((previous) => {
-          const next = { ...previous };
-          delete next[normalizedPostId];
-          return next;
-        });
-        setCommentSubmittingByPostId((previous) => {
-          const next = { ...previous };
-          delete next[normalizedPostId];
-          return next;
-        });
-        setExpandedCommentsPostId((previous) => (Number(previous) === normalizedPostId ? null : previous));
-        if (Number(highlightedPostId) === normalizedPostId) {
-          setHighlightedPostId(null);
-        }
-        setLikes((previous) => {
-          const next = { ...previous };
-          delete next[normalizedPostId];
-          likesRef.current = next;
-          return next;
-        });
-      } catch (error) {
-        setFeedErrorText(error.message || "Beitrag konnte nicht geloescht werden.");
-      } finally {
-        setDeletingPostIds((previous) => {
-          const next = { ...previous };
-          delete next[normalizedPostId];
-          return next;
-        });
-      }
-    },
-    [apiClient, deletingPostIds, highlightedPostId, setCommentInputByPostId],
-  );
-
-  const loadCommentsForPost = useCallback(
-    async (postId) => {
-      setCommentsLoadingByPostId((previous) => ({ ...previous, [postId]: true }));
-      setCommentErrorByPostId((previous) => ({ ...previous, [postId]: "" }));
-      try {
-        const response = await apiClient.getComments(postId);
-        setCommentsByPostId((previous) => ({
-          ...previous,
-          [postId]: Array.isArray(response.comments) ? response.comments : [],
-        }));
-      } catch (error) {
-        setCommentErrorByPostId((previous) => ({
-          ...previous,
-          [postId]: error.message || "Kommentare konnten nicht geladen werden.",
-        }));
-      } finally {
-        setCommentsLoadingByPostId((previous) => ({ ...previous, [postId]: false }));
-      }
-    },
-    [apiClient],
-  );
-
-  const openCommentsForPost = useCallback(
-    async (postId) => {
-      if (expandedCommentsPostIdRef.current === postId) {
-        setExpandedCommentsPostId(null);
-        expandedCommentsPostIdRef.current = null;
-        return;
-      }
-      setExpandedCommentsPostId(postId);
-      expandedCommentsPostIdRef.current = postId;
-
-      if (Array.isArray(commentsByPostIdRef.current[postId])) {
-        return;
-      }
-      await loadCommentsForPost(postId);
-    },
-    [loadCommentsForPost],
-  );
-
-  const submitComment = useCallback(
-    async (postId) => {
-      const rawText = commentInputByPostIdRef.current[postId] || "";
-      const text = rawText.trim();
-      if (!text) {
-        setCommentErrorByPostId((previous) => ({
-          ...previous,
-          [postId]: "Kommentar darf nicht leer sein.",
-        }));
-        return;
-      }
-      if (text.length > 300) {
-        setCommentErrorByPostId((previous) => ({
-          ...previous,
-          [postId]: "Kommentar darf maximal 300 Zeichen haben.",
-        }));
-        return;
-      }
-
-      setCommentSubmittingByPostId((previous) => ({ ...previous, [postId]: true }));
-      setCommentErrorByPostId((previous) => ({ ...previous, [postId]: "" }));
-
-      try {
-        const response = await apiClient.createComment(postId, { text });
-        if (response?.comment) {
-          setCommentsByPostId((previous) => {
-            const nextCommentsByPostId = {
-              ...previous,
-              [postId]: [...(previous[postId] || []), response.comment],
-            };
-            commentsByPostIdRef.current = nextCommentsByPostId;
-            return nextCommentsByPostId;
-          });
-        }
-        setCommentInputByPostId((previous) => {
-          const nextInputByPostId = { ...previous };
-          delete nextInputByPostId[postId];
-          commentInputByPostIdRef.current = nextInputByPostId;
-          return nextInputByPostId;
-        });
-      } catch (error) {
-        setCommentErrorByPostId((previous) => ({
-          ...previous,
-          [postId]: error.message || "Kommentar konnte nicht gesendet werden.",
-        }));
-      } finally {
-        setCommentSubmittingByPostId((previous) => ({ ...previous, [postId]: false }));
-      }
-    },
-    [apiClient, setCommentInputByPostId],
-  );
 
   const markAllNotificationsRead = async () => {
     if (pendingMarkAllTimerRef.current !== null) {
@@ -747,35 +500,6 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     return nextPosts;
   }, [posts, likes, deferredSearchQuery, feedMode, sortOrder]);
 
-  const handleToggleComments = useCallback(
-    (postId) => {
-      openCommentsForPost(postId);
-    },
-    [openCommentsForPost],
-  );
-
-  const handleCommentTextChange = useCallback((postId, value) => {
-    setCommentInputByPostId((previous) => {
-      const nextInputByPostId = { ...previous, [postId]: value };
-      commentInputByPostIdRef.current = nextInputByPostId;
-      return nextInputByPostId;
-    });
-    if (commentErrorByPostIdRef.current[postId]) {
-      setCommentErrorByPostId((previous) => {
-        const nextErrorByPostId = { ...previous, [postId]: "" };
-        commentErrorByPostIdRef.current = nextErrorByPostId;
-        return nextErrorByPostId;
-      });
-    }
-  }, [setCommentInputByPostId]);
-
-  const handleSubmitComment = useCallback(
-    (postId) => {
-      submitComment(postId);
-    },
-    [submitComment],
-  );
-
   const handleResetFilters = useCallback(() => {
     setSearchQuery("");
     setFeedMode("all");
@@ -845,13 +569,12 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
       />
 
       {current === "feed" && (
-        <main style={{ maxWidth: 1520, margin: "0 auto", padding: "40px 34px 66px" }}>
+        <main style={{ width: "100%", maxWidth: "none", margin: 0, padding: "38px 28px 64px" }}>
           <FeedToolbar
             feedMode={feedMode}
             setFeedMode={setFeedMode}
             sortOrder={sortOrder}
             setSortOrder={setSortOrder}
-            lastUpdatedAt={lastFeedLoadedAt}
             onResetFilters={handleResetFilters}
             showAdvanced={showFeedFilters}
           />
@@ -893,27 +616,12 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
               Keine Inhalte fuer diesen Filter gefunden.
             </div>
           ) : (
-            <div className="masonry-feed">
+            <div className="feed-grid-balanced">
               {visiblePosts.map((post) => (
                 <PostCard
                   key={post.id}
                   post={post}
-                  currentUserId={currentUser.id}
-                  onOpenProfile={openProfile}
-                  onDeletePost={deletePost}
-                  liked={Boolean(likes[post.id])}
-                  onToggleLike={toggleLike}
                   isHighlighted={Number(post.id) === Number(highlightedPostId)}
-                  comments={commentsByPostId[post.id] || EMPTY_COMMENTS}
-                  commentCount={Array.isArray(commentsByPostId[post.id]) ? commentsByPostId[post.id].length : Number(post.commentCount) || 0}
-                  isCommentsOpen={expandedCommentsPostId === post.id}
-                  onToggleComments={handleToggleComments}
-                  commentText={commentInputByPostId[post.id] || ""}
-                  onCommentTextChange={handleCommentTextChange}
-                  onSubmitComment={handleSubmitComment}
-                  isCommentsLoading={Boolean(commentsLoadingByPostId[post.id])}
-                  isCommentSubmitting={Boolean(commentSubmittingByPostId[post.id])}
-                  commentErrorText={commentErrorByPostId[post.id] || ""}
                   styles={styles}
                 />
               ))}

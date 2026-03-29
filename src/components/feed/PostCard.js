@@ -1,46 +1,17 @@
 import React from "react";
 import SafeImage from "../common/SafeImage";
-import { CommentIcon, HeartIcon } from "../common/Icons";
-import CommentPanel from "./CommentPanel";
 
 const overlayStyle = {
   position: "absolute",
   inset: 0,
-  background: "linear-gradient(to top, rgba(7, 12, 24, 0.84), rgba(7, 12, 24, 0.12) 56%)",
-  display: "flex",
-  alignItems: "flex-end",
-  justifyContent: "space-between",
-  gap: "10px",
-  padding: "14px",
-  color: "#f3f4f6",
+  background: "linear-gradient(to top, rgba(7, 12, 24, 0.78), rgba(7, 12, 24, 0.08) 62%)",
   opacity: 0,
   pointerEvents: "none",
   transition: "opacity 260ms ease",
 };
 
-const PostCard = React.memo(function PostCard({
-  post,
-  currentUserId,
-  onOpenProfile,
-  onDeletePost,
-  liked,
-  onToggleLike,
-  postRef,
-  isHighlighted,
-  comments,
-  isCommentsOpen,
-  onToggleComments,
-  commentText,
-  onCommentTextChange,
-  onSubmitComment,
-  isCommentsLoading,
-  isCommentSubmitting,
-  commentErrorText,
-  styles,
-}) {
+const PostCard = React.memo(function PostCard({ post, postRef, isHighlighted, styles }) {
   const [isImageLoaded, setIsImageLoaded] = React.useState(false);
-  const [isLikePopping, setIsLikePopping] = React.useState(false);
-  const likePopTimeoutRef = React.useRef(null);
   const frameAspectRatios = ["4 / 5", "5 / 7", "3 / 4", "1 / 1", "16 / 10"];
   const postIdNumber = Number(post?.id);
   const ratioIndex = Number.isFinite(postIdNumber)
@@ -48,36 +19,9 @@ const PostCard = React.memo(function PostCard({
     : 0;
   const frameAspectRatio = frameAspectRatios[ratioIndex];
 
-  const commentsAriaLabel = isHighlighted
-    ? `${isCommentsOpen ? "Kommentare ausblenden" : "Kommentare anzeigen"} (Ausgewahlter Beitrag)`
-    : isCommentsOpen
-      ? "Kommentare ausblenden"
-      : "Kommentare anzeigen";
-
-  const handleLikeClick = () => {
-    if (likePopTimeoutRef.current !== null) {
-      window.clearTimeout(likePopTimeoutRef.current);
-    }
-    setIsLikePopping(true);
-    likePopTimeoutRef.current = window.setTimeout(() => {
-      setIsLikePopping(false);
-      likePopTimeoutRef.current = null;
-    }, 260);
-    onToggleLike(post.id);
-  };
-
-  React.useEffect(
-    () => () => {
-      if (likePopTimeoutRef.current !== null) {
-        window.clearTimeout(likePopTimeoutRef.current);
-      }
-    },
-    [],
-  );
-
   return (
     <article
-      className="fade-in masonry-item"
+      className="fade-in gallery-item"
       ref={postRef}
       data-testid={`post-${post.id}`}
       style={{
@@ -93,101 +37,12 @@ const PostCard = React.memo(function PostCard({
         <SafeImage
           src={post.images[0]}
           alt={`Artwork von ${post.user}`}
-          onDoubleClick={handleLikeClick}
           onLoad={() => setIsImageLoaded(true)}
           className="artwork-image"
           style={{ ...styles.image, height: "100%" }}
         />
-        <div className="artwork-overlay" style={overlayStyle}>
-          <button
-            type="button"
-            onClick={() => onOpenProfile(post)}
-            style={{
-              ...styles.iconBtn,
-              fontSize: "13px",
-              fontWeight: 600,
-              letterSpacing: "0.01em",
-              textShadow: "0 1px 10px rgba(0, 0, 0, 0.5)",
-            }}
-          >
-            {post.user}
-          </button>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <button
-              type="button"
-              onClick={handleLikeClick}
-              className={isLikePopping ? "like-icon-btn is-popping" : "like-icon-btn"}
-              style={{
-                ...styles.iconBtn,
-                width: "32px",
-                height: "32px",
-                borderRadius: "999px",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "rgba(70, 54, 173, 0.22)",
-                border: "1px solid rgba(139, 92, 246, 0.46)",
-              }}
-              aria-label="Like umschalten"
-            >
-              <HeartIcon active={liked} />
-            </button>
-            <button
-              type="button"
-              onClick={() => onToggleComments(post.id)}
-              style={{
-                ...styles.iconBtn,
-                width: "32px",
-                height: "32px",
-                borderRadius: "999px",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "rgba(32, 84, 182, 0.2)",
-                border: "1px solid rgba(56, 189, 248, 0.46)",
-              }}
-              aria-label={commentsAriaLabel}
-            >
-              <CommentIcon />
-            </button>
-            {String(post.ownerId || "") === String(currentUserId || "") && (
-              <button
-                type="button"
-                onClick={() => onDeletePost(post.id)}
-                style={{
-                  ...styles.iconBtn,
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "999px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "rgba(80, 20, 20, 0.62)",
-                  border: "1px solid rgba(252, 165, 165, 0.38)",
-                  color: "#fecaca",
-                  fontSize: "15px",
-                }}
-                aria-label="Beitrag loeschen"
-              >
-                ×
-              </button>
-            )}
-          </div>
-        </div>
+        <div className="artwork-overlay" style={overlayStyle} />
       </div>
-
-      {isCommentsOpen && (
-        <CommentPanel
-          comments={comments}
-          isLoading={isCommentsLoading}
-          errorText={commentErrorText}
-          commentText={commentText}
-          onCommentTextChange={(value) => onCommentTextChange(post.id, value)}
-          onSubmitComment={() => onSubmitComment(post.id)}
-          isSubmitting={isCommentSubmitting}
-          styles={styles}
-        />
-      )}
     </article>
   );
 });

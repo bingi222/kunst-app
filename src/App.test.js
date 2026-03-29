@@ -442,7 +442,7 @@ test("requires email and consent for registration", async () => {
   expect(await screen.findByText("Bitte E-Mail-Verification und Marketing-Einwilligung bestaetigen.")).toBeInTheDocument();
 });
 
-test("allows unliking a previously liked post", async () => {
+test("can filter liked posts without interaction controls", async () => {
   render(<App />);
 
   fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
@@ -458,15 +458,10 @@ test("allows unliking a previously liked post", async () => {
 
   fireEvent.click(screen.getByRole("button", { name: "Nur Likes" }));
 
-  expect(await screen.findByRole("button", { name: "Like umschalten" })).toBeInTheDocument();
-
-  const likeButtons = screen.getAllByRole("button", { name: "Like umschalten" });
-  fireEvent.click(likeButtons[0]);
-
-  expect(await screen.findByText("Keine Inhalte fuer diesen Filter gefunden.")).toBeInTheDocument();
+  expect(screen.getAllByTestId(/post-/)).toHaveLength(1);
 });
 
-test("loads and submits comments for a post", async () => {
+test("renders post cards without interaction buttons", async () => {
   render(<App />);
 
   fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
@@ -479,20 +474,14 @@ test("loads and submits comments for a post", async () => {
 
   await screen.findByRole("button", { name: "Home" });
 
-  const commentButtons = await screen.findAllByRole("button", { name: "Kommentare anzeigen" });
-  fireEvent.click(commentButtons[0]);
-
-  expect(await screen.findByText("Noch keine Kommentare.")).toBeInTheDocument();
-
-  fireEvent.change(screen.getByPlaceholderText("Schreibe einen Kommentar..."), {
-    target: { value: "Mega nice!" },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Senden" }));
-
-  expect(await screen.findByText("Mega nice!")).toBeInTheDocument();
+  const posts = await screen.findAllByTestId(/post-/);
+  expect(posts.length).toBeGreaterThan(0);
+  expect(screen.queryByRole("button", { name: "Like umschalten" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Kommentare anzeigen" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Beitrag loeschen" })).toBeNull();
 });
 
-test("shows icon-only comment interaction in feed", async () => {
+test("keeps feed cards image-only in default state", async () => {
   render(<App />);
 
   fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
@@ -504,9 +493,10 @@ test("shows icon-only comment interaction in feed", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
   await screen.findByRole("button", { name: "Home" });
-  const commentButtons = await screen.findAllByRole("button", { name: "Kommentare anzeigen" });
-  expect(commentButtons.length).toBeGreaterThan(0);
-  expect(commentButtons.every((button) => (button.textContent || "").trim() === "")).toBe(true);
+  const posts = await screen.findAllByTestId(/post-/);
+  expect(posts.length).toBeGreaterThan(0);
+  expect(screen.queryByRole("button", { name: "Like umschalten" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Kommentare anzeigen" })).toBeNull();
 });
 
 test("shows notifications badge and marks all as read", async () => {
@@ -578,10 +568,7 @@ test("opens related post from activity notification", async () => {
   const notifButton = await screen.findByRole("button", { name: "Zum Beitrag" });
   fireEvent.click(notifButton);
 
-  const targetPostButton = await screen.findByRole("button", {
-    name: /Kommentare anzeigen \(Ausgewahlter Beitrag\)/,
-  });
-  expect(targetPostButton).toBeInTheDocument();
+  expect(await screen.findByTestId("post-1")).toBeInTheDocument();
 });
 
 test("renders fallback notification text when message is missing", async () => {
@@ -736,8 +723,7 @@ test("persists feed filters and allows reset", async () => {
   expect(screen.getByRole("searchbox", { name: "Suche" })).toHaveValue("");
 });
 
-test("persists comment drafts by post and upload draft image url", async () => {
-  window.localStorage.setItem("kunst-app.comment.drafts.v1", JSON.stringify({ 2: "Entwurf Kommentar" }));
+test("persists upload draft image url", async () => {
   window.localStorage.setItem(
     "kunst-app.upload.draft.v1",
     JSON.stringify("https://picsum.photos/seed/draft-url/900/600"),
@@ -754,25 +740,14 @@ test("persists comment drafts by post and upload draft image url", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
   await screen.findByRole("button", { name: "Home" });
-  const initialButtons = await screen.findAllByRole("button", { name: "Kommentare anzeigen" });
-  fireEvent.click(initialButtons[0]);
-  expect(await screen.findByDisplayValue("Entwurf Kommentar")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Kommentare ausblenden" }));
-
   fireEvent.click(screen.getByRole("button", { name: "Upload" }));
   expect(await screen.findByDisplayValue("https://picsum.photos/seed/draft-url/900/600")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Home" }));
-  const reopenedButtons = await screen.findAllByRole("button", { name: "Kommentare anzeigen" });
-  fireEvent.click(reopenedButtons[0]);
-  expect(await screen.findByDisplayValue("Entwurf Kommentar")).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: "Kommentare ausblenden" }));
   fireEvent.click(screen.getByRole("button", { name: "Upload" }));
   expect(screen.getByDisplayValue("https://picsum.photos/seed/draft-url/900/600")).toBeInTheDocument();
 });
 
-test("allows deleting own post from feed", async () => {
-  window.confirm = () => true;
+test("does not render delete controls in feed cards", async () => {
   render(<App />);
 
   fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
@@ -783,13 +758,6 @@ test("allows deleting own post from feed", async () => {
   });
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
-  const firstPost = await screen.findByTestId("post-2");
-  expect(within(firstPost).queryByRole("button", { name: "Beitrag loeschen" })).toBeNull();
-
-  const ownPost = await screen.findByTestId("post-1");
-  fireEvent.click(within(ownPost).getByRole("button", { name: "Beitrag loeschen" }));
-
-  await waitFor(() => {
-    expect(screen.queryByTestId("post-1")).not.toBeInTheDocument();
-  });
+  await screen.findByTestId("post-1");
+  expect(screen.queryByRole("button", { name: "Beitrag loeschen" })).toBeNull();
 });

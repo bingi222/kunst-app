@@ -1,5 +1,3 @@
-import { formatRelativeTime } from "../../utils/format";
-
 function buttonStyle(active = false) {
   return {
     height: 32,
@@ -21,28 +19,10 @@ export default function FeedToolbar({
   sortOrder,
   setSortOrder,
   onResetFilters,
-  lastUpdatedAt,
   showAdvanced = false,
 }) {
-  const lastUpdatedLabel = lastUpdatedAt
-    ? `Zuletzt aktualisiert ${formatRelativeTime(lastUpdatedAt)}`
-    : "Noch nicht aktualisiert";
-
   return (
-    <section style={{ marginBottom: showAdvanced ? "42px" : "34px" }}>
-      <p
-        style={{
-          marginTop: 0,
-          marginBottom: showAdvanced ? "14px" : 0,
-          fontSize: "10px",
-          color: "#6f7b92",
-          textAlign: "right",
-          letterSpacing: "0.03em",
-        }}
-      >
-        {lastUpdatedLabel}
-      </p>
-
+    <section style={{ marginBottom: showAdvanced ? "36px" : "28px" }}>
       {showAdvanced && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "flex-end" }}>
           <button type="button" onClick={() => setFeedMode("all")} style={buttonStyle(feedMode === "all")}>
@@ -63,7 +43,7 @@ export default function FeedToolbar({
           </button>
         </div>
       )}
-      {!showAdvanced && <div style={{ height: "2px" }} />}
+      {!showAdvanced && <div style={{ height: "1px" }} />}
     </section>
   );
 }
