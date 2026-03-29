@@ -12,12 +12,6 @@ const overlayStyle = {
 
 const PostCard = React.memo(function PostCard({ post, postRef, isHighlighted, styles }) {
   const [isImageLoaded, setIsImageLoaded] = React.useState(false);
-  const frameAspectRatios = ["4 / 5", "5 / 7", "3 / 4", "1 / 1", "16 / 10"];
-  const postIdNumber = Number(post?.id);
-  const ratioIndex = Number.isFinite(postIdNumber)
-    ? Math.abs(postIdNumber) % frameAspectRatios.length
-    : 0;
-  const frameAspectRatio = frameAspectRatios[ratioIndex];
 
   return (
     <article
@@ -30,16 +24,13 @@ const PostCard = React.memo(function PostCard({ post, postRef, isHighlighted, st
         boxShadow: isHighlighted ? "0 0 0 1px rgba(139, 92, 246, 0.45)" : styles.card.boxShadow,
       }}
     >
-      <div
-        className={`artwork-thumb${isImageLoaded ? " is-loaded" : ""}`}
-        style={{ aspectRatio: frameAspectRatio }}
-      >
+      <div className={`artwork-thumb${isImageLoaded ? " is-loaded" : ""}`}>
         <SafeImage
           src={post.images[0]}
           alt={`Artwork von ${post.user}`}
           onLoad={() => setIsImageLoaded(true)}
           className="artwork-image"
-          style={{ ...styles.image, height: "100%" }}
+          style={styles.image}
         />
         <div className="artwork-overlay" style={overlayStyle} />
       </div>

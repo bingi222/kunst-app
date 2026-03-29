@@ -144,11 +144,11 @@ button:focus-visible,
 }
 
 .feed-grid-balanced {
-  width: min(100%, 1360px);
+  width: min(100%, 1400px);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
   align-items: start;
 }
 
