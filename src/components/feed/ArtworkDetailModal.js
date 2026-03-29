@@ -74,35 +74,12 @@ export default function ArtworkDetailModal({ post, onClose }) {
             style={{
               width: "100%",
               height: "auto",
-              maxHeight: "68vh",
+              maxHeight: "78vh",
               objectFit: "contain",
               borderRadius: "14px",
               background: "#111826",
             }}
           />
-
-          <div style={{ marginTop: "14px", display: "grid", gap: "8px" }}>
-            <p style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "#f5f6fb" }}>
-              {post.user || "Unbekannter Kuenstler"}
-            </p>
-            <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.55, color: "#b7c1d4" }}>
-              Dieses Werk zeigt eine reduzierte, zeitgenoessische Komposition mit Fokus auf Licht, Struktur und
-              Stimmung. Die Detailansicht ist als visuelle Vorschau vorbereitet.
-            </p>
-            <div
-              style={{
-                marginTop: "4px",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "10px",
-                color: "#d7def0",
-                fontSize: "13px",
-              }}
-            >
-              <span style={{ opacity: 0.9 }}>♡</span>
-              <span style={{ opacity: 0.9 }}>Like-Bereich (Preview)</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

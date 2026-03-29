@@ -778,9 +778,37 @@ test("opens and closes artwork detail modal on image click", async () => {
   fireEvent.click(artworkImage);
 
   expect(await screen.findByRole("dialog", { name: "Detailansicht Kunstwerk" })).toBeInTheDocument();
-  expect(screen.getByText(/Like-Bereich \(Preview\)/)).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Detailansicht schliessen" }));
+  await waitFor(() => {
+    expect(screen.queryByRole("dialog", { name: "Detailansicht Kunstwerk" })).not.toBeInTheDocument();
+  });
+});
+
+test("closes artwork detail modal via backdrop click and Escape", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const firstPost = await screen.findByTestId("post-1");
+  const artworkImage = within(firstPost).getByRole("img", { name: /Artwork von/ });
+  fireEvent.click(artworkImage);
+
+  const dialog = await screen.findByRole("dialog", { name: "Detailansicht Kunstwerk" });
+  fireEvent.click(dialog);
+  await waitFor(() => {
+    expect(screen.queryByRole("dialog", { name: "Detailansicht Kunstwerk" })).not.toBeInTheDocument();
+  });
+
+  fireEvent.click(artworkImage);
+  expect(await screen.findByRole("dialog", { name: "Detailansicht Kunstwerk" })).toBeInTheDocument();
+  fireEvent.keyDown(window, { key: "Escape" });
   await waitFor(() => {
     expect(screen.queryByRole("dialog", { name: "Detailansicht Kunstwerk" })).not.toBeInTheDocument();
   });
