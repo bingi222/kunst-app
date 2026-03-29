@@ -52,6 +52,8 @@ export default function ArtworkDetailModal({ post, onClose }) {
     return null;
   }
 
+  const artistName = String(post.user || "Unbekannt");
+
   return (
     <div
       style={backdropStyle}
@@ -80,6 +82,14 @@ export default function ArtworkDetailModal({ post, onClose }) {
               background: "#1a1a1a",
             }}
           />
+          <div style={{ padding: "12px 4px 2px" }}>
+            <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "rgba(255, 255, 255, 0.9)" }}>
+              Kuenstler: {artistName}
+            </p>
+            <p style={{ margin: "8px 0 0", fontSize: "13px", lineHeight: 1.45, color: "#aaaaaa" }}>
+              Beschreibung folgt in Kuerze.
+            </p>
+          </div>
         </div>
       </div>
     </div>
