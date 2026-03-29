@@ -52,6 +52,7 @@ const styles = {
   },
   image: {
     width: "100%",
+    maxWidth: "100%",
     height: "auto",
     objectFit: "cover",
     background: "#1b1f29",
@@ -569,7 +570,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
       />
 
       {current === "feed" && (
-        <main style={{ width: "100%", maxWidth: "none", margin: 0, padding: "38px 28px 64px" }}>
+        <main style={{ maxWidth: 1320, margin: "0 auto", padding: "38px 24px 64px" }}>
           <FeedToolbar
             feedMode={feedMode}
             setFeedMode={setFeedMode}
