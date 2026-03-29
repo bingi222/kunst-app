@@ -313,26 +313,27 @@ export default function ProfilePage({ data, onBack, isOwnProfile, onSaveProfile,
         </div>
       )}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: "8px",
-        }}
-      >
+      <div style={{ marginTop: "8px" }}>
+        <h3 style={{ marginTop: 0, marginBottom: "12px" }}>{isOwnProfile ? "Deine Werke" : "Werke"}</h3>
         {data.images.length === 0 ? (
           <div style={{ border: "1px dashed #3a3a3a", borderRadius: "12px", padding: "16px", color: "#aaaaaa" }}>
-            Noch keine hochgeladenen Bilder.
+            {isOwnProfile ? "Du hast noch nichts hochgeladen." : "Noch keine hochgeladenen Bilder."}
           </div>
         ) : (
-          data.images.map((image, index) => (
-            <SafeImage
-              key={`${data.id}-profile-${index}`}
-              src={image}
-              alt={`Profilbild ${index + 1}`}
-              style={{ width: "100%", height: 220, objectFit: "cover", background: "#1a1a1a", borderRadius: "10px" }}
-            />
-          ))
+          <div className="feed-grid-balanced">
+            {data.images.map((image, index) => (
+              <article key={`${data.id}-profile-${index}`} className="gallery-item">
+                <div className="artwork-thumb is-loaded">
+                  <SafeImage
+                    src={image}
+                    alt={`Werk ${index + 1} von ${data.user}`}
+                    className="artwork-image"
+                    style={{ width: "100%", height: "auto", objectFit: "cover", background: "#1a1a1a" }}
+                  />
+                </div>
+              </article>
+            ))}
+          </div>
         )}
       </div>
     </section>

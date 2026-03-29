@@ -360,6 +360,7 @@ test("allows changing profile password", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
   fireEvent.click(await screen.findByRole("button", { name: "Mein Profil" }));
+  expect(await screen.findByText("Deine Werke")).toBeInTheDocument();
   const showButtons = screen.getAllByRole("button", { name: /^Anzeigen|Verbergen$/ });
   expect(showButtons).toHaveLength(3);
   showButtons.forEach((button) => fireEvent.click(button));
