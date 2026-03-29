@@ -3,16 +3,16 @@ import { formatRelativeTime } from "../../utils/format";
 
 function buttonStyle(active = false) {
   return {
-    height: 36,
-    borderRadius: "12px",
-    border: "1px solid #2b313d",
-    background: active ? "#222a39" : "#171b24",
+    height: 32,
+    borderRadius: "999px",
+    border: "1px solid rgba(255, 255, 255, 0.14)",
+    background: active ? "rgba(255, 255, 255, 0.13)" : "rgba(18, 23, 34, 0.64)",
     color: "#e5e7eb",
-    padding: "0 12px",
-    fontSize: "13px",
+    padding: "0 10px",
+    fontSize: "12px",
     fontWeight: 600,
     cursor: "pointer",
-    transition: "transform 180ms ease, background-color 180ms ease, border-color 180ms ease",
+    transition: "transform 180ms ease, background-color 180ms ease, border-color 180ms ease, opacity 180ms ease",
   };
 }
 
@@ -35,20 +35,36 @@ export default function FeedToolbar({
     : "Noch nicht aktualisiert";
 
   return (
-    <section style={{ marginBottom: "26px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "10px" }}>
-        <label htmlFor="feed-search" style={{ marginBottom: 0, fontSize: "12px", color: "#9aa3b6", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-          Suche
-        </label>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+    <section style={{ marginBottom: "36px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px", marginBottom: "8px" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 6px", borderRadius: "999px", border: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(12, 16, 24, 0.45)", backdropFilter: "blur(8px)" }}>
+          <input
+            id="feed-search"
+            type="search"
+            value={searchQuery}
+            onChange={(event) => onSearchChange(event.target.value)}
+            aria-label="Suche"
+            placeholder="Suche"
+            style={{
+              width: "clamp(170px, 24vw, 250px)",
+              boxSizing: "border-box",
+              border: "1px solid transparent",
+              borderRadius: "999px",
+              background: "rgba(17, 23, 34, 0.82)",
+              color: "#f3f4f6",
+              padding: "7px 11px",
+              outline: "none",
+              fontSize: "12px",
+            }}
+          />
           <button
             type="button"
             onClick={() => setShowAdvanced((prev) => !prev)}
-            style={{ ...buttonStyle(showAdvanced), minWidth: "44px", padding: "0 10px" }}
+            style={{ ...buttonStyle(showAdvanced), minWidth: "28px", width: "28px", height: "28px", padding: 0, opacity: 0.82 }}
             aria-label={showAdvanced ? "Filter ausblenden" : "Filter anzeigen"}
             title={showAdvanced ? "Filter ausblenden" : "Filter anzeigen"}
           >
-            ⚙
+            ⌯
           </button>
           {showRefreshButton && (
             <button type="button" onClick={onRefresh} disabled={isRefreshing} style={buttonStyle(false)}>
@@ -57,25 +73,7 @@ export default function FeedToolbar({
           )}
         </div>
       </div>
-      <input
-        id="feed-search"
-        type="search"
-        value={searchQuery}
-        onChange={(event) => onSearchChange(event.target.value)}
-        placeholder="Kuenstler oder Bio suchen"
-        style={{
-          width: "100%",
-          boxSizing: "border-box",
-          border: "1px solid #252c39",
-          borderRadius: "14px",
-          background: "#111722",
-          color: "#f3f4f6",
-          padding: "12px 14px",
-          marginBottom: "10px",
-          outline: "none",
-        }}
-      />
-      <p style={{ marginTop: 0, marginBottom: showAdvanced ? "12px" : 0, fontSize: "11px", color: "#7e8ca6" }}>{lastUpdatedLabel}</p>
+      <p style={{ marginTop: 0, marginBottom: showAdvanced ? "12px" : 0, fontSize: "10px", color: "#6f7b92", textAlign: "right" }}>{lastUpdatedLabel}</p>
 
       {showAdvanced && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>

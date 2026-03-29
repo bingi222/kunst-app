@@ -39,6 +39,14 @@ const PostCard = React.memo(function PostCard({
   styles,
 }) {
   const [isImageLoaded, setIsImageLoaded] = React.useState(false);
+  const [isLikePopping, setIsLikePopping] = React.useState(false);
+  const likePopTimeoutRef = React.useRef(null);
+  const frameAspectRatios = ["4 / 5", "5 / 7", "3 / 4", "1 / 1", "16 / 10"];
+  const postIdNumber = Number(post?.id);
+  const ratioIndex = Number.isFinite(postIdNumber)
+    ? Math.abs(postIdNumber) % frameAspectRatios.length
+    : 0;
+  const frameAspectRatio = frameAspectRatios[ratioIndex];
 
   const commentsAriaLabel = isHighlighted
     ? `${isCommentsOpen ? "Kommentare ausblenden" : "Kommentare anzeigen"} (Ausgewahlter Beitrag)`
@@ -46,9 +54,30 @@ const PostCard = React.memo(function PostCard({
       ? "Kommentare ausblenden"
       : "Kommentare anzeigen";
 
+  const handleLikeClick = () => {
+    if (likePopTimeoutRef.current !== null) {
+      window.clearTimeout(likePopTimeoutRef.current);
+    }
+    setIsLikePopping(true);
+    likePopTimeoutRef.current = window.setTimeout(() => {
+      setIsLikePopping(false);
+      likePopTimeoutRef.current = null;
+    }, 260);
+    onToggleLike(post.id);
+  };
+
+  React.useEffect(
+    () => () => {
+      if (likePopTimeoutRef.current !== null) {
+        window.clearTimeout(likePopTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
   return (
     <article
-      className="fade-in"
+      className="fade-in masonry-item"
       ref={postRef}
       data-testid={`post-${post.id}`}
       style={{
@@ -57,14 +86,17 @@ const PostCard = React.memo(function PostCard({
         boxShadow: isHighlighted ? "0 0 0 1px rgba(139, 92, 246, 0.45)" : styles.card.boxShadow,
       }}
     >
-      <div className={`artwork-thumb${isImageLoaded ? " is-loaded" : ""}`}>
+      <div
+        className={`artwork-thumb${isImageLoaded ? " is-loaded" : ""}`}
+        style={{ aspectRatio: frameAspectRatio }}
+      >
         <SafeImage
           src={post.images[0]}
           alt={`Artwork von ${post.user}`}
-          onDoubleClick={() => onToggleLike(post.id)}
+          onDoubleClick={handleLikeClick}
           onLoad={() => setIsImageLoaded(true)}
           className="artwork-image"
-          style={styles.image}
+          style={{ ...styles.image, height: "100%" }}
         />
         <div className="artwork-overlay" style={overlayStyle}>
           <button
@@ -83,7 +115,8 @@ const PostCard = React.memo(function PostCard({
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <button
               type="button"
-              onClick={() => onToggleLike(post.id)}
+              onClick={handleLikeClick}
+              className={isLikePopping ? "like-icon-btn is-popping" : "like-icon-btn"}
               style={{
                 ...styles.iconBtn,
                 width: "32px",

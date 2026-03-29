@@ -52,7 +52,7 @@ const styles = {
   },
   image: {
     width: "100%",
-    height: "500px",
+    height: "auto",
     objectFit: "cover",
     background: "#1b1f29",
     transition: "transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 320ms ease",
@@ -838,7 +838,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
       />
 
       {current === "feed" && (
-        <main style={{ maxWidth: 1440, margin: "0 auto", padding: "34px 30px 52px" }}>
+        <main style={{ maxWidth: 1520, margin: "0 auto", padding: "40px 34px 66px" }}>
           <FeedToolbar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -890,14 +890,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
               Keine Inhalte fuer diesen Filter gefunden.
             </div>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-                gap: "22px",
-                alignItems: "start",
-              }}
-            >
+            <div className="masonry-feed">
               {visiblePosts.map((post) => (
                 <PostCard
                   key={post.id}
