@@ -779,7 +779,8 @@ test("opens and closes artwork detail modal on image click", async () => {
 
   expect(await screen.findByRole("dialog", { name: "Detailansicht Kunstwerk" })).toBeInTheDocument();
   expect(screen.getByText(/Kuenstler:\s*Bingi/)).toBeInTheDocument();
-  expect(screen.getByText(/Beschreibung folgt/i)).toBeInTheDocument();
+  expect(screen.getByText(/Likes/)).toBeInTheDocument();
+  expect(screen.getByText(/vor 2 Stunden gepostet/i)).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Detailansicht schliessen" }));
   await waitFor(() => {

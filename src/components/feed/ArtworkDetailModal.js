@@ -35,6 +35,26 @@ const closeButtonStyle = {
   lineHeight: 1,
 };
 
+function createDetailMeta(post) {
+  const idPart = Number(post.id);
+  const userPart = String(post.user || "")
+    .split("")
+    .reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const hash = Math.abs((Number.isFinite(idPart) ? idPart : 0) * 31 + userPart);
+  const fallbackArtists = ["Atelier Nord", "Studio Lumen", "Kollektiv Forma", "Maison Nocturne"];
+  const generatedArtist = fallbackArtists[hash % fallbackArtists.length];
+  const artistName = String(post.user || "").trim() || generatedArtist;
+  const likeCount = 80 + (hash % 321);
+  const descriptions = [
+    "Eine ruhige Komposition aus Kontrast und Struktur, die den Blick langsam in die Tiefe fuehrt.",
+    "Subtile Lichtflaechen und reduzierte Formen schaffen eine konzentrierte, galleryartige Wirkung.",
+    "Das Werk setzt auf klare Flaechen und feine Tonabstufungen, um eine stille Dynamik zu erzeugen.",
+    "Minimalistische Linien und weiche Uebergaenge geben dem Motiv eine praezise, zeitlose Praesenz.",
+  ];
+  const description = descriptions[hash % descriptions.length];
+  return { artistName, likeCount, description };
+}
+
 export default function ArtworkDetailModal({ post, onClose }) {
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -52,7 +72,7 @@ export default function ArtworkDetailModal({ post, onClose }) {
     return null;
   }
 
-  const artistName = String(post.user || "Unbekannt");
+  const detailMeta = createDetailMeta(post);
 
   return (
     <div
@@ -72,7 +92,7 @@ export default function ArtworkDetailModal({ post, onClose }) {
         <div style={{ padding: "0 18px 18px" }}>
           <SafeImage
             src={post.images?.[0]}
-            alt={`Detailansicht von ${post.user}`}
+            alt={`Detailansicht von ${detailMeta.artistName}`}
             style={{
               width: "100%",
               height: "auto",
@@ -84,10 +104,16 @@ export default function ArtworkDetailModal({ post, onClose }) {
           />
           <div style={{ padding: "12px 4px 2px" }}>
             <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "rgba(255, 255, 255, 0.9)" }}>
-              Kuenstler: {artistName}
+              Kuenstler: {detailMeta.artistName}
+            </p>
+            <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#aaaaaa" }}>
+              {detailMeta.likeCount} Likes
             </p>
             <p style={{ margin: "8px 0 0", fontSize: "13px", lineHeight: 1.45, color: "#aaaaaa" }}>
-              Beschreibung folgt in Kuerze.
+              {detailMeta.description}
+            </p>
+            <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#aaaaaa" }}>
+              vor 2 Stunden gepostet
             </p>
           </div>
         </div>
