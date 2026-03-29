@@ -12,7 +12,18 @@ const fieldStyle = {
   padding: "10px 12px",
 };
 
-export default function ProfilePage({ data, onBack, isOwnProfile, onSaveProfile, onChangePassword, styles, getPasswordStrength }) {
+export default function ProfilePage({
+  data,
+  onBack,
+  isOwnProfile,
+  onSaveProfile,
+  onChangePassword,
+  styles,
+  getPasswordStrength,
+  isFollowed = false,
+  followerCount = 0,
+  onToggleFollow = () => {},
+}) {
   const [displayName, setDisplayName] = useState(data?.user || "");
   const [bio, setBio] = useState(data?.bio || "");
   const [avatar, setAvatar] = useState(data?.avatar || "");
@@ -77,6 +88,26 @@ export default function ProfilePage({ data, onBack, isOwnProfile, onSaveProfile,
         />
         <h2 style={{ marginBottom: "6px" }}>{data.user}</h2>
         <p style={{ marginTop: 0, opacity: 0.8 }}>{data.bio}</p>
+        {!isOwnProfile && (
+          <div style={{ marginTop: "10px", display: "inline-flex", alignItems: "center", gap: "10px" }}>
+            <button
+              type="button"
+              onClick={onToggleFollow}
+              aria-label="Follow visuell umschalten"
+              aria-pressed={isFollowed}
+              style={{
+                ...styles.secondaryBtn,
+                height: "34px",
+                padding: "0 12px",
+                background: isFollowed ? "#222222" : "#1a1a1a",
+                borderColor: isFollowed ? "#3a3a3a" : "#2a2a2a",
+              }}
+            >
+              {isFollowed ? "Gefolgt" : "Follow"}
+            </button>
+            <span style={{ fontSize: "12px", color: "#aaaaaa" }}>{followerCount} Follower</span>
+          </div>
+        )}
       </div>
 
       {isOwnProfile && (

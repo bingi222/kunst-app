@@ -229,11 +229,36 @@ function createOwnProfile(currentUser, posts) {
   };
 }
 
+function getArtistFollowKeyFromPost(post) {
+  if (!post) {
+    return "";
+  }
+  const ownerId = String(post.ownerId || "").trim();
+  if (ownerId) {
+    return `owner:${ownerId}`;
+  }
+  const normalizedUser = normalizeUsername(String(post.user || "").trim());
+  return normalizedUser ? `user:${normalizedUser}` : "";
+}
+
+function createFollowerCountFromKey(artistKey) {
+  const key = String(artistKey || "");
+  if (!key) {
+    return 120;
+  }
+  let hash = 0;
+  for (let index = 0; index < key.length; index += 1) {
+    hash = (hash * 31 + key.charCodeAt(index)) >>> 0;
+  }
+  return 80 + (hash % 920);
+}
+
 function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, apiClient }) {
   const [current, setCurrent] = useState("feed");
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [likes, setLikes] = useState({});
   const [posts, setPosts] = useState([]);
+  const [followByArtistKey, setFollowByArtistKey] = useState({});
   const [notifications, setNotifications] = useState([]);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
@@ -310,6 +335,28 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
 
   const ownProfile = useMemo(() => createOwnProfile(currentUser, posts), [currentUser, posts]);
   const activeProfile = selectedProfile && !selectedProfile.isOwnProfile ? selectedProfile : ownProfile;
+  const detailArtistKey = useMemo(() => getArtistFollowKeyFromPost(detailPost), [detailPost]);
+  const activeProfileArtistKey = useMemo(() => getArtistFollowKeyFromPost(activeProfile), [activeProfile]);
+  const isFollowingDetailArtist = Boolean(detailArtistKey && followByArtistKey[detailArtistKey]);
+  const isFollowingActiveProfileArtist = Boolean(activeProfileArtistKey && followByArtistKey[activeProfileArtistKey]);
+  const detailFollowerCount = useMemo(
+    () => createFollowerCountFromKey(detailArtistKey) + (isFollowingDetailArtist ? 1 : 0),
+    [detailArtistKey, isFollowingDetailArtist],
+  );
+  const activeProfileFollowerCount = useMemo(
+    () => createFollowerCountFromKey(activeProfileArtistKey) + (isFollowingActiveProfileArtist ? 1 : 0),
+    [activeProfileArtistKey, isFollowingActiveProfileArtist],
+  );
+
+  const toggleFollowArtist = useCallback((artistKey) => {
+    if (!artistKey) {
+      return;
+    }
+    setFollowByArtistKey((previous) => ({
+      ...previous,
+      [artistKey]: !previous[artistKey],
+    }));
+  }, []);
 
   const openProfile = useCallback(
     (post) => {
@@ -653,7 +700,13 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
         </main>
       )}
 
-      <ArtworkDetailModal post={detailPost} onClose={closeArtworkDetail} />
+      <ArtworkDetailModal
+        post={detailPost}
+        onClose={closeArtworkDetail}
+        isFollowing={isFollowingDetailArtist}
+        onToggleFollow={() => toggleFollowArtist(detailArtistKey)}
+        followerCount={detailFollowerCount}
+      />
 
       {current === "activity" && (
         <ActivityView
@@ -710,6 +763,9 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
             setCurrent("feed");
             setSelectedProfile(null);
           }}
+          isFollowed={isFollowingActiveProfileArtist}
+          onToggleFollow={() => toggleFollowArtist(activeProfileArtistKey)}
+          followerCount={activeProfileFollowerCount}
           styles={styles}
           getPasswordStrength={getPasswordStrength}
         />

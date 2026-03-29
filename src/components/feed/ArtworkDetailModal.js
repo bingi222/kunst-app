@@ -56,7 +56,13 @@ function createDetailMeta(post) {
   return { artistName, likeCount, description, postedHoursAgo };
 }
 
-export default function ArtworkDetailModal({ post, onClose }) {
+export default function ArtworkDetailModal({
+  post,
+  onClose,
+  isFollowing = false,
+  onToggleFollow = () => {},
+  followerCount = 0,
+}) {
   const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
@@ -111,8 +117,32 @@ export default function ArtworkDetailModal({ post, onClose }) {
             }}
           />
           <div style={{ padding: "12px 4px 2px" }}>
-            <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "rgba(255, 255, 255, 0.9)" }}>
-              Kuenstler: {detailMeta.artistName}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+              <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "rgba(255, 255, 255, 0.9)" }}>
+                Kuenstler: {detailMeta.artistName}
+              </p>
+              <button
+                type="button"
+                onClick={() => onToggleFollow(post.user)}
+                aria-label="Kuenstler folgen umschalten"
+                aria-pressed={isFollowing}
+                style={{
+                  border: "1px solid #2a2a2a",
+                  borderRadius: "999px",
+                  padding: "6px 10px",
+                  background: isFollowing ? "#222222" : "#1a1a1a",
+                  color: isFollowing ? "rgba(255, 255, 255, 0.9)" : "#aaaaaa",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  transition: "background-color 180ms ease, color 180ms ease, transform 180ms ease",
+                  transform: isFollowing ? "scale(1.02)" : "scale(1)",
+                }}
+              >
+                {isFollowing ? "Gefolgt" : "Follow"}
+              </button>
+            </div>
+            <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#aaaaaa" }}>
+              {followerCount} Follower
             </p>
             <div style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
               <p style={{ margin: 0, fontSize: "12px", color: "#aaaaaa" }}>

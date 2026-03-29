@@ -864,6 +864,57 @@ test("provides visual like feedback in artwork detail modal", async () => {
   expect(likeButton).toHaveAttribute("aria-pressed", "true");
 });
 
+test("toggles follow state in artwork detail modal", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const firstPost = await screen.findByTestId("post-1");
+  const artworkImage = within(firstPost).getByRole("img", { name: /Artwork von/ });
+  fireEvent.click(artworkImage);
+
+  const followButton = await screen.findByRole("button", { name: "Kuenstler folgen umschalten" });
+  expect(followButton).toHaveAttribute("aria-pressed", "false");
+  expect(followButton).toHaveTextContent("Follow");
+  fireEvent.click(followButton);
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: "Kuenstler folgen umschalten" })).toHaveAttribute("aria-pressed", "true");
+  });
+  expect(screen.getByRole("button", { name: "Kuenstler folgen umschalten" })).toHaveTextContent("Gefolgt");
+});
+
+test("keeps follow state for artist in detail modal", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const foreignPost = await screen.findByTestId("post-2");
+  fireEvent.click(within(foreignPost).getByRole("img", { name: /Artwork von Pluesch/i }));
+
+  const followButton = await screen.findByRole("button", { name: "Kuenstler folgen umschalten" });
+  fireEvent.click(followButton);
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: "Kuenstler folgen umschalten" })).toHaveAttribute("aria-pressed", "true");
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Detailansicht schliessen" }));
+
+  fireEvent.click(within(foreignPost).getByRole("img", { name: /Artwork von Pluesch/i }));
+  const reopenedFollowButton = await screen.findByRole("button", { name: "Kuenstler folgen umschalten" });
+  expect(reopenedFollowButton).toHaveAttribute("aria-pressed", "true");
+});
+
 test("closes artwork detail modal via backdrop click and Escape", async () => {
   render(<App />);
 
