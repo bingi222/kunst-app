@@ -9,7 +9,15 @@ const fallbackStyle = {
   border: "1px dashed #333",
 };
 
-export default function SafeImage({ src, alt, style, onDoubleClick, className = "", onLoad }) {
+export default function SafeImage({
+  src,
+  alt,
+  style,
+  onDoubleClick,
+  onClick,
+  className = "",
+  onLoad,
+}) {
   const [failed, setFailed] = useState(false);
   if (failed || !src) {
     return <div style={{ ...fallbackStyle, ...style }}>Bild nicht verfuegbar</div>;
@@ -23,6 +31,7 @@ export default function SafeImage({ src, alt, style, onDoubleClick, className = 
       decoding="async"
       referrerPolicy="no-referrer"
       onDoubleClick={onDoubleClick}
+      onClick={onClick}
       onLoad={onLoad}
       onError={() => setFailed(true)}
       className={className}

@@ -5,6 +5,7 @@ import usePersistentState from "./hooks/usePersistentState";
 import Header from "./components/layout/Header";
 import FeedToolbar from "./components/feed/FeedToolbar";
 import PostCard from "./components/feed/PostCard";
+import ArtworkDetailModal from "./components/feed/ArtworkDetailModal";
 import ActivityView from "./components/activity/ActivityView";
 import AuthScreen from "./components/pages/AuthScreen";
 import ProfilePage from "./components/pages/ProfilePage";
@@ -238,6 +239,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
   const [notificationsErrorText, setNotificationsErrorText] = useState("");
   const [showUndoMarkAll, setShowUndoMarkAll] = useState(false);
+  const [detailPost, setDetailPost] = useState(null);
   const [highlightedPostId, setHighlightedPostId] = useState(null);
   const [showFeedFilters, setShowFeedFilters] = useState(false);
   const [searchQuery, setSearchQuery] = usePersistentState(STORAGE_FEED_SEARCH_KEY, "");
@@ -529,6 +531,17 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     loadFeed();
   }, [current, loadFeed, loadNotifications]);
 
+  const openArtworkDetail = useCallback((post) => {
+    if (!post) {
+      return;
+    }
+    setDetailPost(post);
+  }, []);
+
+  const closeArtworkDetail = useCallback(() => {
+    setDetailPost(null);
+  }, []);
+
   useEffect(() => {
     if (current !== "feed" || highlightedPostId === null) {
       return undefined;
@@ -623,6 +636,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
                   key={post.id}
                   post={post}
                   isHighlighted={Number(post.id) === Number(highlightedPostId)}
+                  onOpenDetail={openArtworkDetail}
                   styles={styles}
                 />
               ))}
@@ -630,6 +644,8 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
           )}
         </main>
       )}
+
+      <ArtworkDetailModal post={detailPost} onClose={closeArtworkDetail} />
 
       {current === "activity" && (
         <ActivityView

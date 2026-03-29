@@ -10,7 +10,7 @@ const overlayStyle = {
   transition: "opacity 260ms ease",
 };
 
-const PostCard = React.memo(function PostCard({ post, postRef, isHighlighted, styles }) {
+const PostCard = React.memo(function PostCard({ post, postRef, isHighlighted, styles, onOpenDetail }) {
   const [isImageLoaded, setIsImageLoaded] = React.useState(false);
 
   return (
@@ -29,6 +29,7 @@ const PostCard = React.memo(function PostCard({ post, postRef, isHighlighted, st
           src={post.images[0]}
           alt={`Artwork von ${post.user}`}
           onLoad={() => setIsImageLoaded(true)}
+          onClick={() => onOpenDetail?.(post)}
           className="artwork-image"
           style={styles.image}
         />
