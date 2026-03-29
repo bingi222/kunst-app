@@ -2,9 +2,9 @@ function buttonStyle(active = false) {
   return {
     height: 32,
     borderRadius: "999px",
-    border: "1px solid rgba(255, 255, 255, 0.14)",
-    background: active ? "rgba(255, 255, 255, 0.13)" : "rgba(18, 23, 34, 0.64)",
-    color: "#e5e7eb",
+    border: "1px solid #2a2a2a",
+    background: active ? "#222222" : "#1a1a1a",
+    color: "rgba(255, 255, 255, 0.9)",
     padding: "0 10px",
     fontSize: "12px",
     fontWeight: 600,

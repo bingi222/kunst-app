@@ -33,17 +33,17 @@ const TOKENS = {
 
 const styles = {
   app: {
-    background: "#0b1018",
-    color: "#f3f4f6",
+    background: "#121212",
+    color: "rgba(255, 255, 255, 0.9)",
     minHeight: "100vh",
     paddingBottom: "24px",
   },
   card: {
     marginBottom: 0,
-    border: "1px solid #1f2632",
+    border: "1px solid #2a2a2a",
     borderRadius: "18px",
     overflow: "hidden",
-    background: "#0e1420",
+    background: "#1a1a1a",
     boxShadow: "0 14px 44px rgba(0, 0, 0, 0.4)",
   },
   imageGrid: {
@@ -56,14 +56,14 @@ const styles = {
     maxWidth: "100%",
     height: "auto",
     objectFit: "cover",
-    background: "#1b1f29",
+    background: "#1a1a1a",
     transition: "transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 320ms ease",
     opacity: 0.58,
   },
   iconBtn: {
     background: "transparent",
     border: "none",
-    color: "#e5e7eb",
+    color: "rgba(255, 255, 255, 0.9)",
     cursor: "pointer",
     fontSize: "15px",
     padding: 0,
@@ -76,8 +76,8 @@ const styles = {
     transform: "translateX(-50%)",
     bottom: "12px",
     width: "min(94vw, 700px)",
-    background: "rgba(18, 22, 30, 0.88)",
-    border: "1px solid #2b313d",
+    background: "rgba(26, 26, 26, 0.88)",
+    border: "1px solid #2a2a2a",
     borderRadius: TOKENS.radius.pill,
     boxShadow: TOKENS.elevation.soft,
     backdropFilter: "blur(14px)",
@@ -90,8 +90,8 @@ const styles = {
     height: "40px",
     borderRadius: TOKENS.radius.sm,
     border: "1px solid transparent",
-    background: "#8b5cf6",
-    color: "#ffffff",
+    background: "#d7d7d7",
+    color: "#121212",
     padding: "0 14px",
     fontWeight: 600,
     fontSize: "14px",
@@ -101,9 +101,9 @@ const styles = {
   secondaryBtn: {
     height: "40px",
     borderRadius: TOKENS.radius.sm,
-    border: "1px solid #2b313d",
-    background: "#171b24",
-    color: "#e5e7eb",
+    border: "1px solid #2a2a2a",
+    background: "#1a1a1a",
+    color: "rgba(255, 255, 255, 0.9)",
     padding: "0 14px",
     fontWeight: 600,
     fontSize: "14px",
@@ -202,7 +202,7 @@ class AppErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: "24px", color: "#fff", background: "#000", minHeight: "100vh" }}>
+        <div style={{ padding: "24px", color: "rgba(255, 255, 255, 0.9)", background: "#121212", minHeight: "100vh" }}>
           <h1>Inhalte konnten nicht vollstaendig geladen werden</h1>
           <p>Bitte Seite neu laden. Die Anwendung bleibt stabil und zeigt Basisinhalte an.</p>
         </div>
@@ -596,10 +596,10 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
           {feedErrorText && (
             <div
               style={{
-                border: "1px dashed #5b2323",
+                border: "1px dashed #3a3a3a",
                 borderRadius: "10px",
                 padding: "18px",
-                color: "#ffb9b9",
+                color: "#aaaaaa",
                 marginBottom: "12px",
               }}
             >
@@ -610,10 +610,10 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
           {isFeedLoading ? (
             <div
               style={{
-                border: "1px dashed #303030",
+                border: "1px dashed #3a3a3a",
                 borderRadius: "10px",
                 padding: "18px",
-                color: "#b7b7b7",
+                color: "#aaaaaa",
               }}
             >
               Feed wird geladen...
@@ -621,10 +621,10 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
           ) : visiblePosts.length === 0 ? (
             <div
               style={{
-                border: "1px dashed #303030",
+                border: "1px dashed #3a3a3a",
                 borderRadius: "10px",
                 padding: "18px",
-                color: "#b7b7b7",
+                color: "#aaaaaa",
               }}
             >
               Keine Inhalte fuer diesen Filter gefunden.
@@ -936,7 +936,7 @@ export default function App() {
 
   if (!authReady) {
     return (
-      <div style={{ minHeight: "100vh", background: "#0f1115", color: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ minHeight: "100vh", background: "#121212", color: "rgba(255, 255, 255, 0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <p>Session wird geladen...</p>
       </div>
     );

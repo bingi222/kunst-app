@@ -32,18 +32,18 @@ export default function ActivityView({
       {showUndoMarkAll && (
         <div
           style={{
-            border: "1px solid #2f3645",
+            border: "1px solid #2a2a2a",
             borderRadius: "12px",
             padding: "10px 12px",
             marginBottom: "10px",
-            background: "#171c26",
+            background: "#1a1a1a",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             gap: "10px",
           }}
         >
-          <p style={{ margin: 0, fontSize: "12px", color: "#d4d8e1" }}>Alle Benachrichtigungen wurden als gelesen markiert.</p>
+          <p style={{ margin: 0, fontSize: "12px", color: "#aaaaaa" }}>Alle Benachrichtigungen wurden als gelesen markiert.</p>
           <button type="button" onClick={onUndoMarkAll} style={{ ...styles.iconBtn, fontSize: "12px", textDecoration: "underline" }}>
             Rueckgaengig
           </button>
@@ -54,10 +54,10 @@ export default function ActivityView({
       {errorText && (
         <div
           style={{
-            border: "1px dashed #5b2323",
+            border: "1px dashed #3a3a3a",
             borderRadius: "10px",
             padding: "12px",
-            color: "#ffb9b9",
+            color: "#aaaaaa",
             marginBottom: "10px",
           }}
         >
@@ -69,13 +69,13 @@ export default function ActivityView({
       )}
 
       {isLoading ? (
-        <div style={{ border: "1px dashed #303030", borderRadius: "10px", padding: "18px", color: "#b7b7b7" }}>Aktivitaet wird geladen...</div>
+        <div style={{ border: "1px dashed #3a3a3a", borderRadius: "10px", padding: "18px", color: "#aaaaaa" }}>Aktivitaet wird geladen...</div>
       ) : notifications.length === 0 ? (
-        <div style={{ border: "1px dashed #303030", borderRadius: "10px", padding: "18px", color: "#b7b7b7" }}>Noch keine Benachrichtigungen.</div>
+        <div style={{ border: "1px dashed #3a3a3a", borderRadius: "10px", padding: "18px", color: "#aaaaaa" }}>Noch keine Benachrichtigungen.</div>
       ) : (
         <div style={{ display: "grid", gap: "10px" }}>
           {unreadCount === 0 && (
-            <p style={{ margin: 0, fontSize: "12px", color: "#9b9b9b" }}>
+            <p style={{ margin: 0, fontSize: "12px", color: "#aaaaaa" }}>
               Keine ungelesenen Benachrichtigungen.
             </p>
           )}
@@ -83,23 +83,23 @@ export default function ActivityView({
             <div
               key={notification.id}
               style={{
-                border: "1px solid #2a313e",
+                border: "1px solid #2a2a2a",
                 borderRadius: "12px",
                 padding: "12px",
-                background: notification.read ? "#131923" : "#181f2b",
+                background: notification.read ? "#1a1a1a" : "#222222",
               }}
             >
               <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
                 <SafeImage
                   src={notification.actorAvatar}
                   alt={`${notification.actorName || "User"} Avatar`}
-                  style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", background: "#111", flexShrink: 0 }}
+                  style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", background: "#1a1a1a", flexShrink: 0 }}
                 />
                 <div style={{ minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.4 }}>
                     <strong>{notification.actorName || "Jemand"}</strong> {buildNotificationMessage(notification)}
                   </p>
-                  <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#8f8f8f" }}>{formatRelativeTime(notification.createdAt)}</p>
+                  <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#aaaaaa" }}>{formatRelativeTime(notification.createdAt)}</p>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "8px" }}>
                     {Number.isFinite(Number(notification.postId)) && (
                       <button

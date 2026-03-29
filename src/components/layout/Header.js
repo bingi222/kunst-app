@@ -6,13 +6,13 @@ function navBtnStyle(isActive) {
     borderRadius: 0,
     border: "none",
     background: "transparent",
-    color: isActive ? "#f5f8ff" : "#b2bfd6",
+    color: isActive ? "rgba(255, 255, 255, 0.9)" : "#aaaaaa",
     padding: "0 2px",
     fontSize: "12px",
     letterSpacing: "0.08em",
     textTransform: "uppercase",
     fontWeight: isActive ? 600 : 500,
-    boxShadow: isActive ? "inset 0 -1.5px 0 #8b5cf6" : "none",
+    boxShadow: isActive ? "inset 0 -1.5px 0 #d7d7d7" : "none",
     cursor: "pointer",
     transition: "color 220ms ease, box-shadow 220ms ease, opacity 220ms ease",
   };
@@ -67,11 +67,11 @@ export default function Header({
       style={{
         position: "sticky",
         top: 0,
-        background: "rgba(8, 11, 18, 0.62)",
+        background: "rgba(18, 18, 18, 0.82)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         padding: "18px 28px",
-        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
         zIndex: 30,
       }}
     >
@@ -114,8 +114,8 @@ export default function Header({
             gap: "6px",
             padding: "4px 6px",
             borderRadius: "999px",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            background: "rgba(12, 16, 24, 0.42)",
+            border: "1px solid #2a2a2a",
+            background: "rgba(26, 26, 26, 0.72)",
             backdropFilter: "blur(8px)",
           }}
         >
@@ -131,8 +131,8 @@ export default function Header({
               boxSizing: "border-box",
               border: "1px solid transparent",
               borderRadius: "999px",
-              background: "rgba(17, 23, 34, 0.84)",
-              color: "#eef2ff",
+              background: "#1a1a1a",
+              color: "rgba(255, 255, 255, 0.9)",
               padding: "7px 11px",
               outline: "none",
               fontSize: "12px",
@@ -145,9 +145,9 @@ export default function Header({
               width: "28px",
               height: "28px",
               borderRadius: "999px",
-              border: "1px solid rgba(139, 92, 246, 0.34)",
-              background: showFeedFilters ? "rgba(139, 92, 246, 0.2)" : "rgba(17, 23, 34, 0.84)",
-              color: "#dbdcff",
+              border: "1px solid #3a3a3a",
+              background: showFeedFilters ? "#222222" : "#1a1a1a",
+              color: "rgba(255, 255, 255, 0.9)",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -176,9 +176,9 @@ export default function Header({
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              border: "1px solid rgba(139, 92, 246, 0.34)",
-              background: "rgba(139, 92, 246, 0.16)",
-              color: "#eef2ff",
+              border: "1px solid #3a3a3a",
+              background: "#1a1a1a",
+              color: "rgba(255, 255, 255, 0.9)",
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -195,8 +195,8 @@ export default function Header({
                 top: "calc(100% + 8px)",
                 minWidth: "220px",
                 borderRadius: "16px",
-                border: "1px solid rgba(255, 255, 255, 0.14)",
-                background: "rgba(12, 16, 24, 0.92)",
+                border: "1px solid #2a2a2a",
+                background: "rgba(26, 26, 26, 0.96)",
                 backdropFilter: "blur(14px)",
                 WebkitBackdropFilter: "blur(14px)",
                 boxShadow: "0 14px 40px rgba(0, 0, 0, 0.42)",
@@ -204,7 +204,7 @@ export default function Header({
                 zIndex: 40,
               }}
             >
-              <div style={{ fontSize: "12px", color: "#9ca3af", marginBottom: "10px", padding: "0 4px" }}>
+              <div style={{ fontSize: "12px", color: "#aaaaaa", marginBottom: "10px", padding: "0 4px" }}>
                 Angemeldet als {currentUser.displayName}
               </div>
 
@@ -239,8 +239,8 @@ export default function Header({
                       padding: "0 4px",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: "#8b5cf6",
-                      color: "#fff",
+                      background: "#d7d7d7",
+                      color: "#121212",
                       fontSize: "10px",
                       lineHeight: 1,
                       fontWeight: 700,

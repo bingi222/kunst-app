@@ -4,9 +4,9 @@ const fallbackStyle = {
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  color: "#8c8c8c",
+  color: "#aaaaaa",
   fontSize: "12px",
-  border: "1px dashed #333",
+  border: "1px dashed #3a3a3a",
 };
 
 export default function SafeImage({

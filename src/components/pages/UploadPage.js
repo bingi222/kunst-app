@@ -91,11 +91,11 @@ export default function UploadPage({ onBack, onPost, currentUser, draftImageUrl,
 
   return (
     <section style={{ maxWidth: 760, margin: "0 auto", padding: "20px 16px" }}>
-      <button type="button" onClick={onBack} style={{ border: "none", background: "transparent", color: "#9ca3af", cursor: "pointer" }}>
+      <button type="button" onClick={onBack} style={{ border: "none", background: "transparent", color: "#aaaaaa", cursor: "pointer" }}>
         ← Zurueck
       </button>
       <h2 style={{ marginTop: "18px", marginBottom: "8px", fontSize: "30px" }}>Upload</h2>
-      <p style={{ marginTop: 0, color: "#9ca3af" }}>Fuege ein Werk per URL hinzu oder ziehe ein Bild in die Upload-Flache.</p>
+      <p style={{ marginTop: 0, color: "#aaaaaa" }}>Fuege ein Werk per URL hinzu oder ziehe ein Bild in die Upload-Flache.</p>
 
       <div
         role="button"
@@ -112,12 +112,12 @@ export default function UploadPage({ onBack, onPost, currentUser, draftImageUrl,
         }}
         style={{
           marginTop: "14px",
-          border: `1px dashed ${isDragActive ? "#8b5cf6" : "#364152"}`,
+          border: `1px dashed ${isDragActive ? "#4a4a4a" : "#3a3a3a"}`,
           borderRadius: "16px",
           padding: "26px 18px",
-          background: isDragActive ? "rgba(139, 92, 246, 0.1)" : "#151922",
+          background: isDragActive ? "#222222" : "#1a1a1a",
           textAlign: "center",
-          color: "#d1d5db",
+          color: "rgba(255, 255, 255, 0.9)",
           cursor: "pointer",
         }}
       >
@@ -151,16 +151,16 @@ export default function UploadPage({ onBack, onPost, currentUser, draftImageUrl,
           marginTop: "14px",
           padding: "12px 14px",
           borderRadius: "12px",
-          border: "1px solid #303745",
-          background: "#121722",
-          color: "#f3f4f6",
+          border: "1px solid #2a2a2a",
+          background: "#1a1a1a",
+          color: "rgba(255, 255, 255, 0.9)",
         }}
       />
-      {errorText && <p style={{ marginTop: "10px", color: "#fda4af", fontSize: "13px" }}>{errorText}</p>}
+      {errorText && <p style={{ marginTop: "10px", color: "#aaaaaa", fontSize: "13px" }}>{errorText}</p>}
 
       {imageUrl && (
-        <div style={{ marginTop: "14px", border: "1px solid #262d3a", borderRadius: "16px", overflow: "hidden" }}>
-          <SafeImage src={imageUrl} alt="Upload Vorschau" style={{ width: "100%", height: 320, objectFit: "cover", background: "#1b1f29" }} />
+        <div style={{ marginTop: "14px", border: "1px solid #2a2a2a", borderRadius: "16px", overflow: "hidden" }}>
+          <SafeImage src={imageUrl} alt="Upload Vorschau" style={{ width: "100%", height: 320, objectFit: "cover", background: "#1a1a1a" }} />
         </div>
       )}
 
@@ -171,9 +171,9 @@ export default function UploadPage({ onBack, onPost, currentUser, draftImageUrl,
           style={{
             height: "40px",
             borderRadius: "12px",
-            border: "1px solid #2b313d",
-            background: "#171b24",
-            color: "#e5e7eb",
+            border: "1px solid #2a2a2a",
+            background: "#1a1a1a",
+            color: "rgba(255, 255, 255, 0.9)",
             padding: "0 14px",
             fontWeight: 600,
             cursor: "pointer",
@@ -189,8 +189,8 @@ export default function UploadPage({ onBack, onPost, currentUser, draftImageUrl,
             height: "40px",
             borderRadius: "12px",
             border: "1px solid transparent",
-            background: "#8b5cf6",
-            color: "#ffffff",
+            background: "#d7d7d7",
+            color: "#121212",
             padding: "0 14px",
             fontWeight: 600,
             cursor: canPost ? "pointer" : "not-allowed",

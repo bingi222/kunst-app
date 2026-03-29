@@ -1,7 +1,7 @@
 export function getPasswordStrength(value) {
   const normalized = (value || "").trim();
   if (!normalized) {
-    return { label: "Keine Eingabe", color: "#9ca3af" };
+    return { label: "Keine Eingabe", color: "#aaaaaa" };
   }
 
   let score = 0;
@@ -22,12 +22,12 @@ export function getPasswordStrength(value) {
   }
 
   if (normalized.length < 6 || score <= 1) {
-    return { label: "Schwach", color: "#f87171" };
+    return { label: "Schwach", color: "#aaaaaa" };
   }
   if (score <= 3) {
-    return { label: "Mittel", color: "#fbbf24" };
+    return { label: "Mittel", color: "rgba(255, 255, 255, 0.9)" };
   }
-  return { label: "Stark", color: "#34d399" };
+  return { label: "Stark", color: "rgba(255, 255, 255, 0.9)" };
 }
 
 export function formatRelativeTime(timestamp) {

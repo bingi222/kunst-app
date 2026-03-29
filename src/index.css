@@ -2,9 +2,9 @@
 
 :root {
   color-scheme: dark;
-  --accent: #8b5cf6;
-  --accent-soft: rgba(139, 92, 246, 0.26);
-  --accent-strong: #9b7dff;
+  --accent: #d7d7d7;
+  --accent-soft: rgba(255, 255, 255, 0.16);
+  --accent-strong: #efefef;
 }
 
 *,
@@ -34,8 +34,8 @@ body {
     "Droid Sans",
     "Helvetica Neue",
     sans-serif;
-  background: #0f1115;
-  color: #f3f4f6;
+  background: #121212;
+  color: rgba(255, 255, 255, 0.9);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
@@ -61,14 +61,14 @@ button:focus-visible,
   display: grid;
   place-items: center;
   padding: 24px;
-  background: radial-gradient(circle at 20% 0%, rgba(139, 92, 246, 0.18), rgba(15, 17, 21, 0) 40%), #0f1115;
+  background: radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.08), rgba(18, 18, 18, 0) 40%), #121212;
 }
 
 .auth-card {
   width: min(100%, 430px);
   border-radius: 18px;
-  border: 1px solid #2b313d;
-  background: #151922;
+  border: 1px solid #2a2a2a;
+  background: #1a1a1a;
   padding: 24px;
   box-shadow: 0 10px 36px rgba(0, 0, 0, 0.38);
 }
@@ -81,7 +81,7 @@ button:focus-visible,
 
 .auth-subtitle {
   margin: 0 0 14px;
-  color: #9ca3af;
+  color: #aaaaaa;
   font-size: 14px;
 }
 
@@ -94,16 +94,16 @@ button:focus-visible,
   display: block;
   margin-bottom: 6px;
   font-size: 13px;
-  color: #d1d5db;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .form-field > input,
 .form-field > textarea {
   width: 100%;
   border-radius: 12px;
-  border: 1px solid #2b313d;
-  background: #10151e;
-  color: #f5f7fb;
+  border: 1px solid #2a2a2a;
+  background: #1a1a1a;
+  color: rgba(255, 255, 255, 0.9);
   padding: 10px 12px;
 }
 
@@ -124,7 +124,7 @@ button:focus-visible,
 
 .btn-primary {
   background: var(--accent);
-  color: #ffffff;
+  color: #121212;
 }
 
 .btn-primary:hover {
@@ -171,11 +171,11 @@ button:focus-visible,
   position: relative;
   overflow: hidden;
   border-radius: 18px;
-  background: #0f1623;
+  background: #1a1a1a;
   transform: translateZ(0);
   box-shadow:
     0 20px 46px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.05);
+    0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .artwork-thumb img,

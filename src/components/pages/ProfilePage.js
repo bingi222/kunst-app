@@ -5,10 +5,10 @@ import { createAvatarFromName, readFileAsDataUrl } from "../../utils/helpers";
 const fieldStyle = {
   width: "100%",
   boxSizing: "border-box",
-  background: "#10151e",
-  border: "1px solid #2b313d",
+  background: "#1a1a1a",
+  border: "1px solid #2a2a2a",
   borderRadius: "12px",
-  color: "#f5f7fb",
+  color: "rgba(255, 255, 255, 0.9)",
   padding: "10px 12px",
 };
 
@@ -73,7 +73,7 @@ export default function ProfilePage({ data, onBack, isOwnProfile, onSaveProfile,
         <SafeImage
           src={data.avatar}
           alt={`${data.user} Avatar`}
-          style={{ width: 86, height: 86, borderRadius: "50%", objectFit: "cover", background: "#131722", border: "1px solid #2b313d" }}
+          style={{ width: 86, height: 86, borderRadius: "50%", objectFit: "cover", background: "#1a1a1a", border: "1px solid #2a2a2a" }}
         />
         <h2 style={{ marginBottom: "6px" }}>{data.user}</h2>
         <p style={{ marginTop: 0, opacity: 0.8 }}>{data.bio}</p>
@@ -84,9 +84,9 @@ export default function ProfilePage({ data, onBack, isOwnProfile, onSaveProfile,
           style={{
             marginBottom: "20px",
             padding: "16px",
-            border: "1px solid #2b313d",
+            border: "1px solid #2a2a2a",
             borderRadius: "18px",
-            background: "#141a24",
+            background: "#1a1a1a",
           }}
         >
           <h3 style={{ marginTop: 0 }}>Profil bearbeiten</h3>
@@ -173,8 +173,8 @@ export default function ProfilePage({ data, onBack, isOwnProfile, onSaveProfile,
               style={fieldStyle}
             />
           </label>
-          {avatarFileName && <p style={{ marginTop: "-2px", color: "#bfbfbf", fontSize: "12px" }}>Ausgewaehlt: {avatarFileName}</p>}
-          {avatarFileError && <p style={{ color: "#ff8f8f", marginTop: "-2px" }}>{avatarFileError}</p>}
+          {avatarFileName && <p style={{ marginTop: "-2px", color: "#aaaaaa", fontSize: "12px" }}>Ausgewaehlt: {avatarFileName}</p>}
+          {avatarFileError && <p style={{ color: "#aaaaaa", marginTop: "-2px" }}>{avatarFileError}</p>}
 
           <button
             type="button"
@@ -203,10 +203,10 @@ export default function ProfilePage({ data, onBack, isOwnProfile, onSaveProfile,
           >
             Aenderungen speichern
           </button>
-          {profileErrorText && <p style={{ color: "#ff8f8f", marginBottom: 0 }}>{profileErrorText}</p>}
-          {successText && <p style={{ color: "#97f4bd", marginBottom: 0 }}>{successText}</p>}
+          {profileErrorText && <p style={{ color: "#aaaaaa", marginBottom: 0 }}>{profileErrorText}</p>}
+          {successText && <p style={{ color: "rgba(255, 255, 255, 0.9)", marginBottom: 0 }}>{successText}</p>}
 
-          <hr style={{ borderColor: "#2b313d", margin: "16px 0" }} />
+          <hr style={{ borderColor: "#2a2a2a", margin: "16px 0" }} />
 
           <h4 style={{ marginTop: 0, marginBottom: "10px" }}>Passwort aendern</h4>
           <label style={{ display: "block", marginBottom: "10px" }}>
@@ -308,8 +308,8 @@ export default function ProfilePage({ data, onBack, isOwnProfile, onSaveProfile,
           >
             Passwort aktualisieren
           </button>
-          {passwordErrorText && <p style={{ color: "#ff8f8f", marginBottom: 0 }}>{passwordErrorText}</p>}
-          {passwordSuccessText && <p style={{ color: "#97f4bd", marginBottom: 0 }}>{passwordSuccessText}</p>}
+          {passwordErrorText && <p style={{ color: "#aaaaaa", marginBottom: 0 }}>{passwordErrorText}</p>}
+          {passwordSuccessText && <p style={{ color: "rgba(255, 255, 255, 0.9)", marginBottom: 0 }}>{passwordSuccessText}</p>}
         </div>
       )}
 
@@ -321,7 +321,7 @@ export default function ProfilePage({ data, onBack, isOwnProfile, onSaveProfile,
         }}
       >
         {data.images.length === 0 ? (
-          <div style={{ border: "1px dashed #2b313d", borderRadius: "12px", padding: "16px", color: "#b7b7b7" }}>
+          <div style={{ border: "1px dashed #3a3a3a", borderRadius: "12px", padding: "16px", color: "#aaaaaa" }}>
             Noch keine hochgeladenen Bilder.
           </div>
         ) : (
@@ -330,7 +330,7 @@ export default function ProfilePage({ data, onBack, isOwnProfile, onSaveProfile,
               key={`${data.id}-profile-${index}`}
               src={image}
               alt={`Profilbild ${index + 1}`}
-              style={{ width: "100%", height: 220, objectFit: "cover", background: "#131722", borderRadius: "10px" }}
+              style={{ width: "100%", height: 220, objectFit: "cover", background: "#1a1a1a", borderRadius: "10px" }}
             />
           ))
         )}

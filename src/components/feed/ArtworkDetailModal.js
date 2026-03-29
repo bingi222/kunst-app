@@ -4,7 +4,7 @@ import SafeImage from "../common/SafeImage";
 const backdropStyle = {
   position: "fixed",
   inset: 0,
-  background: "rgba(8, 10, 16, 0.78)",
+  background: "rgba(0, 0, 0, 0.56)",
   display: "grid",
   placeItems: "center",
   padding: "24px",
@@ -14,8 +14,8 @@ const backdropStyle = {
 const dialogStyle = {
   width: "min(100%, 980px)",
   borderRadius: "18px",
-  border: "1px solid rgba(255, 255, 255, 0.12)",
-  background: "#0f1520",
+  border: "1px solid #2a2a2a",
+  background: "#1a1a1a",
   boxShadow: "0 24px 70px rgba(0, 0, 0, 0.55)",
   overflow: "hidden",
 };
@@ -24,9 +24,9 @@ const closeButtonStyle = {
   width: "34px",
   height: "34px",
   borderRadius: "999px",
-  border: "1px solid rgba(255, 255, 255, 0.18)",
-  background: "rgba(17, 22, 33, 0.76)",
-  color: "#f3f4f6",
+  border: "1px solid #2a2a2a",
+  background: "#1a1a1a",
+  color: "rgba(255, 255, 255, 0.9)",
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -77,7 +77,7 @@ export default function ArtworkDetailModal({ post, onClose }) {
               maxHeight: "78vh",
               objectFit: "contain",
               borderRadius: "14px",
-              background: "#111826",
+              background: "#1a1a1a",
             }}
           />
         </div>

@@ -19,17 +19,17 @@ export default function CommentPanel({
   return (
     <div
       style={{
-        borderTop: "1px solid #2b313d",
+        borderTop: "1px solid #2a2a2a",
         padding: "12px 14px 14px",
-        background: "#121721",
+        background: "#1a1a1a",
       }}
     >
       {isLoading ? (
-        <p style={{ marginTop: 0, marginBottom: "10px", color: "#a9b0bf", fontSize: "13px" }}>
+        <p style={{ marginTop: 0, marginBottom: "10px", color: "#aaaaaa", fontSize: "13px" }}>
           Kommentare werden geladen...
         </p>
       ) : comments.length === 0 ? (
-        <p style={{ marginTop: 0, marginBottom: "10px", color: "#9aa2b1", fontSize: "13px" }}>
+        <p style={{ marginTop: 0, marginBottom: "10px", color: "#aaaaaa", fontSize: "13px" }}>
           Noch keine Kommentare.
         </p>
       ) : (
@@ -44,7 +44,7 @@ export default function CommentPanel({
                   height: 26,
                   borderRadius: "50%",
                   objectFit: "cover",
-                  background: "#1b2230",
+                  background: "#222222",
                   flexShrink: 0,
                 }}
               />
@@ -53,7 +53,7 @@ export default function CommentPanel({
                   <strong>{comment.userName}</strong>
                 </p>
                 <p style={{ margin: "2px 0 0", fontSize: "13px", lineHeight: 1.35 }}>{comment.text}</p>
-                <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#8f98aa" }}>
+                <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#aaaaaa" }}>
                   {formatRelativeTime(comment.createdAt)}
                 </p>
               </div>
@@ -62,7 +62,7 @@ export default function CommentPanel({
         </div>
       )}
 
-      {errorText && <p style={{ marginTop: 0, marginBottom: "8px", color: "#ff9d9d", fontSize: "12px" }}>{errorText}</p>}
+      {errorText && <p style={{ marginTop: 0, marginBottom: "8px", color: "#aaaaaa", fontSize: "12px" }}>{errorText}</p>}
 
       <label style={{ display: "block", marginBottom: "8px" }}>
         <span style={{ display: "block", marginBottom: "6px", fontSize: "12px", opacity: 0.85 }}>
@@ -77,10 +77,10 @@ export default function CommentPanel({
           style={{
             width: "100%",
             boxSizing: "border-box",
-            background: "#101620",
-            border: "1px solid #2b313d",
+            background: "#1a1a1a",
+            border: "1px solid #2a2a2a",
             borderRadius: "12px",
-            color: "#f3f4f6",
+            color: "rgba(255, 255, 255, 0.9)",
             padding: "10px 12px",
             resize: "vertical",
             fontFamily: "inherit",
@@ -89,7 +89,7 @@ export default function CommentPanel({
       </label>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
-        <span style={{ fontSize: "11px", color: currentLength > 300 ? "#ff9d9d" : "#8f98aa" }}>{currentLength}/300</span>
+        <span style={{ fontSize: "11px", color: "#aaaaaa" }}>{currentLength}/300</span>
         <button
           type="button"
           onClick={onSubmitComment}

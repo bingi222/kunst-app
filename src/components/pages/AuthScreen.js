@@ -68,12 +68,12 @@ export default function AuthScreen({ onLogin, onRegister }) {
         </label>
         {isRegister && <p style={{ marginTop: "-2px", marginBottom: "10px", color: registerPasswordStrength.color, fontSize: "12px" }}>Passwortstaerke: {registerPasswordStrength.label}</p>}
         {isRegister && (
-          <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: "10px", fontSize: "12px", color: "#b9c0cd" }}>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: "10px", fontSize: "12px", color: "#aaaaaa" }}>
             <input type="checkbox" checked={marketingConsent} onChange={(event) => setMarketingConsent(Boolean(event.target.checked))} style={{ marginTop: "2px" }} />
             <span>Ich moechte Produkt-News und Werbe-E-Mails erhalten. Meine E-Mail wird fuer Verifizierung und Marketing genutzt.</span>
           </label>
         )}
-        {errorText && <p style={{ color: "#ff8f8f", marginBottom: "12px" }}>{errorText}</p>}
+        {errorText && <p style={{ color: "#aaaaaa", marginBottom: "12px" }}>{errorText}</p>}
 
         <button className="btn btn-primary" type="submit" style={{ width: "100%" }}>
           {isRegister ? "Registrieren" : "Anmelden"}
@@ -85,12 +85,12 @@ export default function AuthScreen({ onLogin, onRegister }) {
             setMode(isRegister ? "login" : "register");
             setErrorText("");
           }}
-          style={{ marginTop: "10px", background: "transparent", border: "none", color: "#9ea4b2", textDecoration: "underline", cursor: "pointer" }}
+          style={{ marginTop: "10px", background: "transparent", border: "none", color: "#aaaaaa", textDecoration: "underline", cursor: "pointer" }}
         >
           {isRegister ? "Schon ein Konto? Jetzt anmelden" : "Noch kein Konto? Jetzt registrieren"}
         </button>
 
-        <p style={{ marginBottom: 0, marginTop: "16px", color: "#8f8f8f", fontSize: "12px" }}>
+        <p style={{ marginBottom: 0, marginTop: "16px", color: "#aaaaaa", fontSize: "12px" }}>
           Demo-Login: Username <b>bingi</b>, Passwort <b>kunst123</b>
         </p>
       </form>
