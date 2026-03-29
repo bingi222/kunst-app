@@ -31,12 +31,11 @@ export default function FeedToolbar({
           <button type="button" onClick={() => setFeedMode("liked")} style={buttonStyle(feedMode === "liked")}>
             Nur Likes
           </button>
-          <button
-            type="button"
-            onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
-            style={buttonStyle(true)}
-          >
-            Sortierung: {sortOrder === "newest" ? "Neueste zuerst" : "Aelteste zuerst"}
+          <button type="button" onClick={() => setSortOrder("newest")} style={buttonStyle(sortOrder === "newest")}>
+            Neueste
+          </button>
+          <button type="button" onClick={() => setSortOrder("popular")} style={buttonStyle(sortOrder === "popular")}>
+            Beliebteste
           </button>
           <button type="button" onClick={onResetFilters} style={buttonStyle(false)}>
             Filter zuruecksetzen

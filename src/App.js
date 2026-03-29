@@ -495,9 +495,17 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     }
 
     nextPosts.sort((first, second) => {
-      const firstId = Number(first.id) || 0;
-      const secondId = Number(second.id) || 0;
-      return sortOrder === "newest" ? secondId - firstId : firstId - secondId;
+      const firstCreatedAt = Number(first.createdAt) || Number(first.id) || 0;
+      const secondCreatedAt = Number(second.createdAt) || Number(second.id) || 0;
+      if (sortOrder === "popular") {
+        const firstLikes = Number(first.likeCount) || (likes[first.id] ? 1 : 0);
+        const secondLikes = Number(second.likeCount) || (likes[second.id] ? 1 : 0);
+        if (secondLikes !== firstLikes) {
+          return secondLikes - firstLikes;
+        }
+        return secondCreatedAt - firstCreatedAt;
+      }
+      return secondCreatedAt - firstCreatedAt;
     });
 
     return nextPosts;

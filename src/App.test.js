@@ -462,6 +462,33 @@ test("can filter liked posts without interaction controls", async () => {
   expect(screen.getAllByTestId(/post-/)).toHaveLength(1);
 });
 
+test("supports feed sorting by newest and most popular", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  await screen.findByRole("button", { name: "Home" });
+  fireEvent.click(screen.getByRole("button", { name: "Filter anzeigen" }));
+
+  fireEvent.click(screen.getByRole("button", { name: "Beliebteste" }));
+  await waitFor(() => {
+    const posts = screen.getAllByTestId(/post-/);
+    expect(posts[0]).toHaveAttribute("data-testid", "post-1");
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "Neueste" }));
+  await waitFor(() => {
+    const posts = screen.getAllByTestId(/post-/);
+    expect(posts[0]).toHaveAttribute("data-testid", "post-2");
+  });
+});
+
 test("renders post cards without interaction buttons", async () => {
   render(<App />);
 
