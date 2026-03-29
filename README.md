@@ -1,4 +1,68 @@
-# Getting Started with Create React App
+# KUNST App
+
+## Start (Frontend + API)
+
+Das Projekt besteht jetzt aus:
+
+- React Frontend (Port `3000`)
+- Express API fuer Auth/Profile/Posts/Likes (Port `4000`)
+
+### 1) Abhaengigkeiten installieren
+
+```bash
+npm install
+```
+
+### 2) API starten
+
+```bash
+npm run dev:api
+```
+
+Die API laeuft dann unter `http://localhost:4000`.
+
+### 3) Frontend starten (zweites Terminal)
+
+```bash
+npm start
+```
+
+Das Frontend laeuft unter `http://localhost:3000` und nutzt standardmaessig `http://localhost:4000` als API.
+
+Optional kannst du die API-URL setzen:
+
+```bash
+REACT_APP_API_URL=http://localhost:4000 npm start
+```
+
+### Hinweis fuer Cloud/HTTPS-Previews
+
+Die App nutzt standardmaessig einen relativen API-Pfad (`/api`) und `npm start` hat einen Proxy auf
+`http://localhost:4000` konfiguriert. Das verhindert Browser-Fehler durch Mixed Content/CORS in Preview-URLs.
+
+---
+
+## Standard Demo-Login
+
+- Username: `bingi`
+- Passwort: `kunst123`
+
+---
+
+## Neue API-Funktionen (Server-Daten statt Local Fallback)
+
+Die App nutzt jetzt serverseitige Endpunkte fuer:
+
+- Feed laden: `GET /api/posts`
+- Post erstellen: `POST /api/posts`
+- Eigene Likes laden: `GET /api/likes`
+- Like umschalten: `POST /api/posts/:postId/like`
+
+Damit laufen Posts/Likes/Profile serverseitig statt ueber lokale Fallback-Daten.
+
+---
+
+## About Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 

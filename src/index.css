@@ -1,13 +1,256 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  color-scheme: dark;
+  --accent: #d7d7d7;
+  --accent-soft: rgba(255, 255, 255, 0.16);
+  --accent-strong: #efefef;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Fira Sans",
+    "Droid Sans",
+    "Helvetica Neue",
+    sans-serif;
+  background: #121212;
+  color: rgba(255, 255, 255, 0.9);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.08), rgba(18, 18, 18, 0) 40%), #121212;
+}
+
+.auth-card {
+  width: min(100%, 430px);
+  border-radius: 18px;
+  border: 1px solid #2a2a2a;
+  background: #1a1a1a;
+  padding: 24px;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.38);
+}
+
+.auth-title {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.auth-subtitle {
+  margin: 0 0 14px;
+  color: #aaaaaa;
+  font-size: 14px;
+}
+
+.form-field {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.form-field > span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.form-field > input,
+.form-field > textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+  background: #1a1a1a;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 10px 12px;
+}
+
+.btn {
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 180ms ease, filter 180ms ease, background-color 180ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #121212;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.05);
+}
+
+.app-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 22px;
+}
+
+.feed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
+}
+
+.feed-grid-balanced {
+  width: min(100%, 1400px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.gallery-item {
+  width: 100%;
+  margin: 0;
+}
+
+.artwork-feed-card {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.artwork-feed-media {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.artwork-thumb {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #1a1a1a;
+  transform: translateZ(0);
+  box-shadow:
+    0 20px 46px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.artwork-thumb img,
+.artwork-image {
+  display: block;
+  transition:
+    transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 340ms ease;
+  will-change: transform, opacity;
+  opacity: 0.58;
+}
+
+.artwork-thumb .artwork-overlay {
+  opacity: 0;
+  transform: translateY(8px);
+  backdrop-filter: blur(0px);
+  transition:
+    opacity 340ms ease,
+    transform 340ms ease,
+    backdrop-filter 340ms ease;
+}
+
+.artwork-thumb.is-loaded img,
+.artwork-thumb.is-loaded .artwork-image {
+  opacity: 1;
+}
+
+.artwork-thumb:hover img,
+.artwork-thumb:focus-within img,
+.artwork-thumb:hover .artwork-image,
+.artwork-thumb:focus-within .artwork-image {
+  transform: scale(1.06);
+}
+
+.artwork-thumb:hover .artwork-overlay,
+.artwork-thumb:focus-within .artwork-overlay {
+  opacity: 1;
+  transform: translateY(0);
+  backdrop-filter: blur(1.8px);
+  pointer-events: auto;
+}
+
+.fade-in {
+  animation: fadeInSoft 320ms ease both;
+}
+
+@keyframes fadeInSoft {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1200px) {
+  .feed-grid-balanced {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .app-main {
+    padding: 16px;
+  }
+
+  .feed-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .feed-grid-balanced {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
