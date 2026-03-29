@@ -51,6 +51,16 @@ beforeEach(() => {
       commentCount: 0,
       createdAt: Date.now(),
     },
+    {
+      id: 3,
+      ownerId: "u-pluesch",
+      user: "Pluesch",
+      bio: "Abstract emotions",
+      avatar: "https://api.dicebear.com/9.x/initials/svg?seed=Pluesch",
+      images: ["https://picsum.photos/seed/pluesch-2/900/600"],
+      commentCount: 0,
+      createdAt: Date.now() - 500,
+    },
   ];
   likedPostIds = new Set([1]);
   commentsByPostId = {
@@ -940,6 +950,31 @@ test("opens artist profile from detail modal name click and shows stats", async 
   expect(screen.getAllByText(/Follower/).length).toBeGreaterThan(0);
   expect(screen.getByText("Werke")).toBeInTheDocument();
   expect(screen.getByRole("img", { name: "Werk 1 von Pluesch" })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "Werk 2 von Pluesch" })).toBeInTheDocument();
+});
+
+test("opens detail modal from artist profile artwork click", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const foreignPost = await screen.findByTestId("post-2");
+  fireEvent.click(within(foreignPost).getByRole("img", { name: /Artwork von Pluesch/i }));
+
+  await screen.findByRole("dialog", { name: "Detailansicht Kunstwerk" });
+  fireEvent.click(await screen.findByRole("button", { name: /Profil von Pluesch/i }));
+
+  const profileArtwork = await screen.findByRole("img", { name: "Werk 2 von Pluesch" });
+  fireEvent.click(profileArtwork);
+
+  expect(await screen.findByRole("dialog", { name: "Detailansicht Kunstwerk" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Profil von Pluesch/i })).toBeInTheDocument();
 });
 
 test("closes artwork detail modal via backdrop click and Escape", async () => {

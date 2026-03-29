@@ -235,6 +235,7 @@ function createOwnProfile(currentUser, posts) {
     bio: currentUser.bio,
     avatar: currentUser.avatar,
     images: ownImages,
+    works: ownPosts,
     likeCount: ownLikes,
     worksCount: ownImages.length,
     isOwnProfile: true,
@@ -276,6 +277,7 @@ function createProfileFromPost(post, posts, currentUserId) {
     bio: String(post.bio || "").trim() || "Noch keine Bio verfuegbar.",
     avatar: String(post.avatar || "").trim() || fallbackAvatar,
     images,
+    works: profilePosts,
     likeCount,
     worksCount: images.length,
     isOwnProfile: ownerId ? ownerId === currentUserId : false,
@@ -823,6 +825,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
           followerCount={activeProfileFollowerCount}
           likesCount={Number(activeProfile?.likeCount) || 0}
           artworksCount={Array.isArray(activeProfile?.images) ? activeProfile.images.length : 0}
+          onOpenArtworkDetail={openArtworkDetail}
           styles={styles}
           getPasswordStrength={getPasswordStrength}
         />

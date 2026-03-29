@@ -18,6 +18,7 @@ export default function ProfilePage({
   isOwnProfile,
   onSaveProfile,
   onChangePassword,
+  onOpenArtworkDetail = () => {},
   styles,
   getPasswordStrength,
   isFollowed = false,
@@ -61,6 +62,36 @@ export default function ProfilePage({
   }, [data]);
 
   const passwordStrength = useMemo(() => getPasswordStrength(newPassword), [newPassword, getPasswordStrength]);
+  const profileArtworks = useMemo(() => {
+    const works = Array.isArray(data?.works) ? data.works : [];
+    if (works.length > 0) {
+      return works.flatMap((work, workIndex) => {
+        const workImages =
+          Array.isArray(work?.images) && work.images.length > 0
+            ? work.images
+            : [Array.isArray(data?.images) ? data.images[workIndex] : null].filter(Boolean);
+        return workImages.map((image, imageIndex) => ({
+          key: `${work?.id || data?.id || "work"}-${imageIndex}`,
+          image,
+          post: {
+            ...work,
+            images: [image],
+          },
+        }));
+      });
+    }
+
+    const fallbackImages = Array.isArray(data?.images) ? data.images : [];
+    return fallbackImages.map((image, index) => ({
+      key: `${data?.id || "profile"}-image-${index}`,
+      image,
+      post: {
+        ...data,
+        id: `profile-${data?.id || "unknown"}-${index}`,
+        images: [image],
+      },
+    }));
+  }, [data]);
 
   if (!data) {
     return (
@@ -393,20 +424,27 @@ export default function ProfilePage({
 
       <div style={{ marginTop: "8px" }}>
         <h3 style={{ marginTop: 0, marginBottom: "12px" }}>{isOwnProfile ? "Deine Werke" : "Werke"}</h3>
-        {data.images.length === 0 ? (
+        {profileArtworks.length === 0 ? (
           <div style={{ border: "1px dashed #3a3a3a", borderRadius: "12px", padding: "16px", color: "#aaaaaa" }}>
             {isOwnProfile ? "Du hast noch nichts hochgeladen." : "Noch keine hochgeladenen Bilder."}
           </div>
         ) : (
           <div className="feed-grid-balanced">
-            {data.images.map((image, index) => (
-              <article key={`${data.id}-profile-${index}`} className="gallery-item">
+            {profileArtworks.map((artwork, index) => (
+              <article key={artwork.key} className="gallery-item">
                 <div className="artwork-thumb is-loaded">
                   <SafeImage
-                    src={image}
+                    src={artwork.image}
                     alt={`Werk ${index + 1} von ${data.user}`}
+                    onClick={() => onOpenArtworkDetail(artwork.post)}
                     className="artwork-image"
-                    style={{ width: "100%", height: "auto", objectFit: "cover", background: "#1a1a1a" }}
+                    style={{
+                      width: "100%",
+                      height: "auto",
+                      objectFit: "cover",
+                      background: "#1a1a1a",
+                      cursor: "pointer",
+                    }}
                   />
                 </div>
               </article>
