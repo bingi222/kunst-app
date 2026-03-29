@@ -2,18 +2,19 @@ import React, { useEffect, useRef, useState } from "react";
 
 function navBtnStyle(isActive) {
   return {
-    height: 36,
-    borderRadius: "999px",
-    border: isActive ? "1px solid rgba(255, 255, 255, 0.2)" : "1px solid transparent",
-    background: isActive ? "rgba(255, 255, 255, 0.1)" : "transparent",
-    color: "#e8ecf3",
-    padding: "0 13px",
+    height: 30,
+    borderRadius: 0,
+    border: "none",
+    background: "transparent",
+    color: isActive ? "#f5f8ff" : "#b2bfd6",
+    padding: "0 2px",
     fontSize: "12px",
-    letterSpacing: "0.03em",
+    letterSpacing: "0.08em",
     textTransform: "uppercase",
-    fontWeight: 600,
+    fontWeight: isActive ? 600 : 500,
+    boxShadow: isActive ? "inset 0 -1.5px 0 #8b5cf6" : "none",
     cursor: "pointer",
-    transition: "background-color 220ms ease, border-color 220ms ease, color 220ms ease",
+    transition: "color 220ms ease, box-shadow 220ms ease, opacity 220ms ease",
   };
 }
 
@@ -28,6 +29,10 @@ export default function Header({
   onRefreshCurrent,
   onOpenOwnProfile,
   unreadNotificationsCount,
+  searchQuery = "",
+  onSearchChange = () => {},
+  onToggleFeedFilters = () => {},
+  showFeedFilters = false,
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -62,10 +67,10 @@ export default function Header({
       style={{
         position: "sticky",
         top: 0,
-        background: "rgba(10, 13, 20, 0.58)",
-        backdropFilter: "blur(18px)",
-        WebkitBackdropFilter: "blur(18px)",
-        padding: "18px 26px",
+        background: "rgba(8, 11, 18, 0.62)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        padding: "18px 28px",
         borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
         zIndex: 30,
       }}
@@ -77,7 +82,7 @@ export default function Header({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: "24px",
+          gap: "30px",
         }}
       >
         <b style={{ fontSize: "14px", letterSpacing: "0.24em", fontWeight: 600 }}>{title}</b>
@@ -87,7 +92,7 @@ export default function Header({
             display: "flex",
             alignItems: "center",
             flexWrap: "wrap",
-            gap: "10px",
+            gap: "20px",
             justifyContent: "center",
           }}
         >
@@ -102,24 +107,80 @@ export default function Header({
           </button>
         </nav>
 
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "4px 6px",
+            borderRadius: "999px",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "rgba(12, 16, 24, 0.42)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <input
+            id="feed-search"
+            type="search"
+            value={searchQuery}
+            onChange={(event) => onSearchChange(event.target.value)}
+            aria-label="Suche"
+            placeholder="Suche"
+            style={{
+              width: "clamp(150px, 20vw, 220px)",
+              boxSizing: "border-box",
+              border: "1px solid transparent",
+              borderRadius: "999px",
+              background: "rgba(17, 23, 34, 0.84)",
+              color: "#eef2ff",
+              padding: "7px 11px",
+              outline: "none",
+              fontSize: "12px",
+            }}
+          />
+          <button
+            type="button"
+            onClick={onToggleFeedFilters}
+            style={{
+              width: "28px",
+              height: "28px",
+              borderRadius: "999px",
+              border: "1px solid rgba(139, 92, 246, 0.34)",
+              background: showFeedFilters ? "rgba(139, 92, 246, 0.2)" : "rgba(17, 23, 34, 0.84)",
+              color: "#dbdcff",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              fontSize: "12px",
+              lineHeight: 1,
+              transition: "background-color 200ms ease, border-color 200ms ease, transform 200ms ease",
+            }}
+            aria-label={showFeedFilters ? "Filter ausblenden" : "Filter anzeigen"}
+            title={showFeedFilters ? "Filter ausblenden" : "Filter anzeigen"}
+          >
+            ⌯
+          </button>
+        </div>
+
         <div style={{ position: "relative" }} ref={menuRef}>
           <button
             type="button"
             onClick={() => setIsMenuOpen((previous) => !previous)}
             style={{
-              ...navBtnStyle(false),
               minWidth: "36px",
               width: "36px",
               height: "36px",
               padding: 0,
+              borderRadius: "999px",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              textTransform: "none",
-              letterSpacing: "normal",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              background: "rgba(255, 255, 255, 0.06)",
+              border: "1px solid rgba(139, 92, 246, 0.34)",
+              background: "rgba(139, 92, 246, 0.16)",
+              color: "#eef2ff",
               fontWeight: 600,
+              cursor: "pointer",
             }}
             aria-label={isMenuOpen ? "Benutzermenue schliessen" : "Benutzermenue oeffnen"}
           >

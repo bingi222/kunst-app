@@ -6,7 +6,7 @@ import CommentPanel from "./CommentPanel";
 const overlayStyle = {
   position: "absolute",
   inset: 0,
-  background: "linear-gradient(to top, rgba(3, 6, 12, 0.78), rgba(3, 6, 12, 0.1) 58%)",
+  background: "linear-gradient(to top, rgba(7, 12, 24, 0.84), rgba(7, 12, 24, 0.12) 56%)",
   display: "flex",
   alignItems: "flex-end",
   justifyContent: "space-between",
@@ -125,8 +125,8 @@ const PostCard = React.memo(function PostCard({
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: "rgba(11, 16, 25, 0.62)",
-                border: "1px solid rgba(255, 255, 255, 0.16)",
+                background: "rgba(70, 54, 173, 0.22)",
+                border: "1px solid rgba(139, 92, 246, 0.46)",
               }}
               aria-label="Like umschalten"
             >
@@ -143,8 +143,8 @@ const PostCard = React.memo(function PostCard({
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: "rgba(11, 16, 25, 0.62)",
-                border: "1px solid rgba(255, 255, 255, 0.16)",
+                background: "rgba(32, 84, 182, 0.2)",
+                border: "1px solid rgba(56, 189, 248, 0.46)",
               }}
               aria-label={commentsAriaLabel}
             >

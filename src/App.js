@@ -261,6 +261,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const [commentInputByPostId, setCommentInputByPostId] = usePersistentState(STORAGE_COMMENT_DRAFTS_KEY, {});
   const [expandedCommentsPostId, setExpandedCommentsPostId] = useState(null);
   const [highlightedPostId, setHighlightedPostId] = useState(null);
+  const [showFeedFilters, setShowFeedFilters] = useState(false);
   const [searchQuery, setSearchQuery] = usePersistentState(STORAGE_FEED_SEARCH_KEY, "");
   const [feedMode, setFeedMode] = usePersistentState(STORAGE_FEED_MODE_KEY, "all");
   const [sortOrder, setSortOrder] = usePersistentState(STORAGE_FEED_SORT_KEY, "newest");
@@ -412,6 +413,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
         if (current === "activity") {
           loadNotifications();
         } else if (current === "feed") {
+          setShowFeedFilters(false);
           loadFeed();
         }
       }
@@ -778,6 +780,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     setSearchQuery("");
     setFeedMode("all");
     setSortOrder("newest");
+    setShowFeedFilters(false);
   }, [setSearchQuery, setFeedMode, setSortOrder]);
 
   const handleTabChange = useCallback(
@@ -835,22 +838,22 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
         onRefreshCurrent={handleRefreshCurrent}
         onOpenOwnProfile={openOwnProfile}
         unreadNotificationsCount={unreadNotificationsCount}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onToggleFeedFilters={() => setShowFeedFilters((previous) => !previous)}
+        showFeedFilters={showFeedFilters}
       />
 
       {current === "feed" && (
         <main style={{ maxWidth: 1520, margin: "0 auto", padding: "40px 34px 66px" }}>
           <FeedToolbar
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
             feedMode={feedMode}
             setFeedMode={setFeedMode}
             sortOrder={sortOrder}
             setSortOrder={setSortOrder}
-            onRefresh={loadFeed}
-            isRefreshing={isFeedLoading}
             lastUpdatedAt={lastFeedLoadedAt}
             onResetFilters={handleResetFilters}
-            showRefreshButton={false}
+            showAdvanced={showFeedFilters}
           />
 
           {feedErrorText && (
