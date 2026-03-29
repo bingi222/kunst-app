@@ -480,6 +480,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   );
 
   const openOwnProfile = useCallback(() => {
+    setDetailPost(null);
     setSelectedProfile(ownProfile);
     setCurrent("profile");
   }, [ownProfile]);
@@ -676,6 +677,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
 
   const handleTabChange = useCallback(
     (nextTab) => {
+      setDetailPost(null);
       setCurrent(nextTab);
       if (nextTab === "activity") {
         loadNotifications();

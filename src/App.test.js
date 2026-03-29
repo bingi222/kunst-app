@@ -358,6 +358,25 @@ test("allows demo user login and shows app navigation", async () => {
   expect(await screen.findByRole("button", { name: "Upload" })).toBeInTheDocument();
 });
 
+test("opens own profile from nav and allows logout from user menu", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  fireEvent.click(await screen.findByRole("button", { name: "Mein Profil" }));
+  expect(await screen.findByText("Deine Werke")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Benutzermenue oeffnen" }));
+  fireEvent.click(screen.getByRole("button", { name: "Logout" }));
+  expect(await screen.findByRole("heading", { name: "KUNST Login" })).toBeInTheDocument();
+});
+
 test("allows changing profile password", async () => {
   render(<App />);
 
