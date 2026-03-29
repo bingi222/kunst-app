@@ -1010,6 +1010,40 @@ test("applies like from artist profile artwork and updates profile likes count",
   expect(likesCountAfter).toBe(likesCountBefore + 1);
 });
 
+test("shows artist profile likes in home liked filter", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const foreignPost = await screen.findByTestId("post-2");
+  fireEvent.click(within(foreignPost).getByRole("img", { name: /Artwork von Pluesch/i }));
+  fireEvent.click(await screen.findByRole("button", { name: /Profil von Pluesch/i }));
+
+  const profileArtwork = await screen.findByRole("img", { name: "Werk 2 von Pluesch" });
+  fireEvent.click(profileArtwork);
+
+  const likeButton = await screen.findByRole("button", { name: "Like visuell umschalten" });
+  fireEvent.click(likeButton);
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: "Like visuell umschalten" })).toHaveAttribute("aria-pressed", "true");
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Detailansicht schliessen" }));
+
+  fireEvent.click(screen.getByRole("button", { name: "Home" }));
+  fireEvent.click(screen.getByRole("button", { name: "Filter anzeigen" }));
+  fireEvent.click(screen.getByRole("button", { name: "Nur Likes" }));
+
+  const likedPosts = await screen.findAllByTestId(/post-/);
+  expect(likedPosts.length).toBeGreaterThan(1);
+  expect(document.querySelector('img[src="https://picsum.photos/seed/pluesch-2/900/600"]')).not.toBeNull();
+});
+
 test("keeps single-like selection when server returns malformed likes payload", async () => {
   const originalFetch = global.fetch;
   global.fetch = jest.fn(async (url, options = {}) => {
