@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import SafeImage from "../common/SafeImage";
 
 const backdropStyle = {
@@ -46,16 +46,19 @@ function createDetailMeta(post) {
   const artistName = String(post.user || "").trim() || generatedArtist;
   const likeCount = 80 + (hash % 321);
   const descriptions = [
-    "Eine ruhige Komposition aus Kontrast und Struktur, die den Blick langsam in die Tiefe fuehrt.",
-    "Subtile Lichtflaechen und reduzierte Formen schaffen eine konzentrierte, galleryartige Wirkung.",
-    "Das Werk setzt auf klare Flaechen und feine Tonabstufungen, um eine stille Dynamik zu erzeugen.",
-    "Minimalistische Linien und weiche Uebergaenge geben dem Motiv eine praezise, zeitlose Praesenz.",
+    "Eine ruhige Komposition aus Kontrast und Struktur laesst den Blick langsam in die Tiefe wandern. Subtile Uebergaenge erzeugen dabei eine konzentrierte, fast meditative Wirkung.",
+    "Subtile Lichtflaechen und reduzierte Formen schaffen eine klare visuelle Ordnung. Das Werk belohnt laengeres Betrachten mit immer neuen kleinen Details.",
+    "Klare Flaechen und feine Tonabstufungen bauen eine stille Dynamik auf. Die Balance aus Ruhe und Spannung verleiht dem Motiv eine praezise Praesenz.",
+    "Minimalistische Linien und weiche Uebergaenge geben der Szene eine zeitlose Haltung. Gleichzeitig bleibt genug Offenheit, damit der Blick frei assoziieren kann.",
   ];
   const description = descriptions[hash % descriptions.length];
-  return { artistName, likeCount, description };
+  const postedHoursAgo = 1 + (hash % 8);
+  return { artistName, likeCount, description, postedHoursAgo };
 }
 
 export default function ArtworkDetailModal({ post, onClose }) {
+  const [isLiked, setIsLiked] = useState(false);
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
@@ -68,11 +71,16 @@ export default function ArtworkDetailModal({ post, onClose }) {
     };
   }, [onClose]);
 
+  useEffect(() => {
+    setIsLiked(false);
+  }, [post?.id]);
+
   if (!post) {
     return null;
   }
 
   const detailMeta = createDetailMeta(post);
+  const displayedLikes = detailMeta.likeCount + (isLiked ? 1 : 0);
 
   return (
     <div
@@ -106,14 +114,35 @@ export default function ArtworkDetailModal({ post, onClose }) {
             <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "rgba(255, 255, 255, 0.9)" }}>
               Kuenstler: {detailMeta.artistName}
             </p>
-            <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#aaaaaa" }}>
-              {detailMeta.likeCount} Likes
-            </p>
+            <div style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+              <p style={{ margin: 0, fontSize: "12px", color: "#aaaaaa" }}>
+                {displayedLikes} Likes
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsLiked((previous) => !previous)}
+                aria-label="Like visuell umschalten"
+                aria-pressed={isLiked}
+                style={{
+                  border: "1px solid #2a2a2a",
+                  borderRadius: "999px",
+                  padding: "6px 10px",
+                  background: isLiked ? "#222222" : "#1a1a1a",
+                  color: isLiked ? "rgba(255, 255, 255, 0.9)" : "#aaaaaa",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  transition: "background-color 180ms ease, color 180ms ease, transform 180ms ease",
+                  transform: isLiked ? "scale(1.02)" : "scale(1)",
+                }}
+              >
+                {isLiked ? "♥ Geliked" : "♡ Like"}
+              </button>
+            </div>
             <p style={{ margin: "8px 0 0", fontSize: "13px", lineHeight: 1.45, color: "#aaaaaa" }}>
               {detailMeta.description}
             </p>
             <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#aaaaaa" }}>
-              vor 2 Stunden gepostet
+              vor {detailMeta.postedHoursAgo} Stunden gepostet
             </p>
           </div>
         </div>

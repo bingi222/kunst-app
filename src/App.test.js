@@ -780,12 +780,35 @@ test("opens and closes artwork detail modal on image click", async () => {
   expect(await screen.findByRole("dialog", { name: "Detailansicht Kunstwerk" })).toBeInTheDocument();
   expect(screen.getByText(/Kuenstler:\s*Bingi/)).toBeInTheDocument();
   expect(screen.getByText(/Likes/)).toBeInTheDocument();
-  expect(screen.getByText(/vor 2 Stunden gepostet/i)).toBeInTheDocument();
+  expect(screen.getByText(/vor \d+ Stunden/i)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Like visuell umschalten" })).toBeInTheDocument();
+  expect(screen.getByText(/laesst den Blick langsam in die Tiefe wandern/i)).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Detailansicht schliessen" }));
   await waitFor(() => {
     expect(screen.queryByRole("dialog", { name: "Detailansicht Kunstwerk" })).not.toBeInTheDocument();
   });
+});
+
+test("provides visual like feedback in artwork detail modal", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const firstPost = await screen.findByTestId("post-1");
+  const artworkImage = within(firstPost).getByRole("img", { name: /Artwork von/ });
+  fireEvent.click(artworkImage);
+
+  const likeButton = await screen.findByRole("button", { name: "Like visuell umschalten" });
+  expect(likeButton).toHaveAttribute("aria-pressed", "false");
+  fireEvent.click(likeButton);
+  expect(likeButton).toHaveAttribute("aria-pressed", "true");
 });
 
 test("closes artwork detail modal via backdrop click and Escape", async () => {
