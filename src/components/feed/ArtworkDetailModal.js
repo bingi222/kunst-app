@@ -61,6 +61,7 @@ export default function ArtworkDetailModal({
   onClose,
   isFollowing = false,
   onToggleFollow = () => {},
+  onOpenArtistProfile = () => {},
   followerCount = 0,
 }) {
   const [isLiked, setIsLiked] = useState(false);
@@ -118,9 +119,28 @@ export default function ArtworkDetailModal({
           />
           <div style={{ padding: "12px 4px 2px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
-              <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "rgba(255, 255, 255, 0.9)" }}>
-                Kuenstler: {detailMeta.artistName}
-              </p>
+              <div style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "rgba(255, 255, 255, 0.9)" }}>
+                <span>Kuenstler: </span>
+                <button
+                  type="button"
+                  onClick={() => onOpenArtistProfile(post)}
+                  aria-label={`Profil von ${detailMeta.artistName} anzeigen`}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    margin: 0,
+                    color: "rgba(255, 255, 255, 0.9)",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    textUnderlineOffset: "3px",
+                  }}
+                >
+                  {detailMeta.artistName}
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => onToggleFollow(post.user)}

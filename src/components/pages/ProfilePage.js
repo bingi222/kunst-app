@@ -22,6 +22,8 @@ export default function ProfilePage({
   getPasswordStrength,
   isFollowed = false,
   followerCount = 0,
+  likesCount = 0,
+  artworksCount = 0,
   onToggleFollow = () => {},
 }) {
   const [displayName, setDisplayName] = useState(data?.user || "");
@@ -108,6 +110,51 @@ export default function ProfilePage({
             <span style={{ fontSize: "12px", color: "#aaaaaa" }}>{followerCount} Follower</span>
           </div>
         )}
+        <div
+          style={{
+            marginTop: "10px",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "8px",
+          }}
+        >
+          <span
+            style={{
+              border: "1px solid #2a2a2a",
+              borderRadius: "999px",
+              padding: "6px 10px",
+              fontSize: "12px",
+              color: "#aaaaaa",
+              background: "#1a1a1a",
+            }}
+          >
+            {Number(followerCount) || 0} Follower
+          </span>
+          <span
+            style={{
+              border: "1px solid #2a2a2a",
+              borderRadius: "999px",
+              padding: "6px 10px",
+              fontSize: "12px",
+              color: "#aaaaaa",
+              background: "#1a1a1a",
+            }}
+          >
+            {Number(likesCount) || 0} Likes
+          </span>
+          <span
+            style={{
+              border: "1px solid #2a2a2a",
+              borderRadius: "999px",
+              padding: "6px 10px",
+              fontSize: "12px",
+              color: "#aaaaaa",
+              background: "#1a1a1a",
+            }}
+          >
+            {Number(artworksCount) || (Array.isArray(data.images) ? data.images.length : 0)} Werke
+          </span>
+        </div>
       </div>
 
       {isOwnProfile && (

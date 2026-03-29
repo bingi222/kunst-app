@@ -213,10 +213,20 @@ class AppErrorBoundary extends React.Component {
 }
 
 function createOwnProfile(currentUser, posts) {
-  const ownImages = posts
-    .filter((post) => post.ownerId === currentUser.id)
-    .flatMap((post) => post.images)
-    .slice(0, 20);
+  const ownPosts = posts.filter((post) => post.ownerId === currentUser.id);
+  const ownImages = ownPosts.flatMap((post) => post.images).slice(0, 20);
+  const ownLikes = ownPosts.reduce((sum, post) => {
+    const likeCount = Number(post.likeCount);
+    if (Number.isFinite(likeCount) && likeCount >= 0) {
+      return sum + likeCount;
+    }
+    const idPart = Number(post.id);
+    const userPart = String(post.user || "")
+      .split("")
+      .reduce((nextSum, char) => nextSum + char.charCodeAt(0), 0);
+    const hash = Math.abs((Number.isFinite(idPart) ? idPart : 0) * 17 + userPart);
+    return sum + (24 + (hash % 180));
+  }, 0);
 
   return {
     id: currentUser.id,
@@ -225,7 +235,50 @@ function createOwnProfile(currentUser, posts) {
     bio: currentUser.bio,
     avatar: currentUser.avatar,
     images: ownImages,
+    likeCount: ownLikes,
+    worksCount: ownImages.length,
     isOwnProfile: true,
+  };
+}
+
+function createProfileFromPost(post, posts, currentUserId) {
+  if (!post) {
+    return null;
+  }
+  const ownerId = String(post.ownerId || "").trim();
+  const normalizedUser = normalizeUsername(String(post.user || "").trim());
+  const matchingPosts = posts.filter((candidate) => {
+    if (ownerId) {
+      return String(candidate.ownerId || "").trim() === ownerId;
+    }
+    return normalizeUsername(String(candidate.user || "").trim()) === normalizedUser;
+  });
+  const profilePosts = matchingPosts.length > 0 ? matchingPosts : [post];
+  const images = profilePosts.flatMap((entry) => (Array.isArray(entry.images) ? entry.images : [])).filter(Boolean);
+  const likeCount = profilePosts.reduce((sum, entry) => {
+    const parsedLikeCount = Number(entry.likeCount);
+    if (Number.isFinite(parsedLikeCount) && parsedLikeCount >= 0) {
+      return sum + parsedLikeCount;
+    }
+    const idPart = Number(entry.id);
+    const userPart = String(entry.user || "")
+      .split("")
+      .reduce((nextSum, char) => nextSum + char.charCodeAt(0), 0);
+    const hash = Math.abs((Number.isFinite(idPart) ? idPart : 0) * 17 + userPart);
+    return sum + (24 + (hash % 180));
+  }, 0);
+  const fallbackAvatar = createAvatarFromName(String(post.user || "Kuenstler"));
+
+  return {
+    ...post,
+    ownerId: ownerId || post.ownerId,
+    user: String(post.user || "").trim() || "Kuenstler",
+    bio: String(post.bio || "").trim() || "Noch keine Bio verfuegbar.",
+    avatar: String(post.avatar || "").trim() || fallbackAvatar,
+    images,
+    likeCount,
+    worksCount: images.length,
+    isOwnProfile: ownerId ? ownerId === currentUserId : false,
   };
 }
 
@@ -360,14 +413,15 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
 
   const openProfile = useCallback(
     (post) => {
-      const profileData = {
-        ...post,
-        isOwnProfile: post.ownerId === currentUser.id,
-      };
+      const profileData = createProfileFromPost(post, posts, currentUser.id);
+      if (!profileData) {
+        return;
+      }
+      setDetailPost(null);
       setSelectedProfile(profileData);
       setCurrent("profile");
     },
-    [currentUser.id],
+    [currentUser.id, posts],
   );
 
   const openOwnProfile = useCallback(() => {
@@ -705,6 +759,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
         onClose={closeArtworkDetail}
         isFollowing={isFollowingDetailArtist}
         onToggleFollow={() => toggleFollowArtist(detailArtistKey)}
+        onOpenArtistProfile={openProfile}
         followerCount={detailFollowerCount}
       />
 
@@ -766,6 +821,8 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
           isFollowed={isFollowingActiveProfileArtist}
           onToggleFollow={() => toggleFollowArtist(activeProfileArtistKey)}
           followerCount={activeProfileFollowerCount}
+          likesCount={Number(activeProfile?.likeCount) || 0}
+          artworksCount={Array.isArray(activeProfile?.images) ? activeProfile.images.length : 0}
           styles={styles}
           getPasswordStrength={getPasswordStrength}
         />

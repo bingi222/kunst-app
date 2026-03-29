@@ -831,7 +831,7 @@ test("opens and closes artwork detail modal on image click", async () => {
   fireEvent.click(artworkImage);
 
   expect(await screen.findByRole("dialog", { name: "Detailansicht Kunstwerk" })).toBeInTheDocument();
-  expect(screen.getByText(/Kuenstler:\s*Bingi/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Profil von Bingi anzeigen" })).toBeInTheDocument();
   expect(screen.getByText(/Likes/)).toBeInTheDocument();
   expect(screen.getByText(/vor \d+ Stunden/i)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Like visuell umschalten" })).toBeInTheDocument();
@@ -913,6 +913,33 @@ test("keeps follow state for artist in detail modal", async () => {
   fireEvent.click(within(foreignPost).getByRole("img", { name: /Artwork von Pluesch/i }));
   const reopenedFollowButton = await screen.findByRole("button", { name: "Kuenstler folgen umschalten" });
   expect(reopenedFollowButton).toHaveAttribute("aria-pressed", "true");
+});
+
+test("opens artist profile from detail modal name click and shows stats", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const foreignPost = await screen.findByTestId("post-2");
+  fireEvent.click(within(foreignPost).getByRole("img", { name: /Artwork von Pluesch/i }));
+
+  await screen.findByRole("dialog", { name: "Detailansicht Kunstwerk" });
+  const artistButton = await screen.findByRole("button", { name: /Profil von Pluesch/i });
+  fireEvent.click(artistButton);
+
+  expect(await screen.findByRole("heading", { name: "Pluesch" })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "Pluesch Avatar" })).toBeInTheDocument();
+  expect(screen.getByText(/\d+\s+Likes/)).toBeInTheDocument();
+  expect(screen.getByText(/\d+\s+Werke/)).toBeInTheDocument();
+  expect(screen.getAllByText(/Follower/).length).toBeGreaterThan(0);
+  expect(screen.getByText("Werke")).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "Werk 1 von Pluesch" })).toBeInTheDocument();
 });
 
 test("closes artwork detail modal via backdrop click and Escape", async () => {
