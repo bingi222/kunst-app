@@ -864,14 +864,14 @@ test("provides visual like feedback in artwork detail modal", async () => {
   });
   fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
 
-  const firstPost = await screen.findByTestId("post-1");
+  const firstPost = await screen.findByTestId("post-2");
   const artworkImage = within(firstPost).getByRole("img", { name: /Artwork von/ });
   fireEvent.click(artworkImage);
 
   const likeButton = await screen.findByRole("button", { name: "Like visuell umschalten" });
-  expect(likeButton).toHaveAttribute("aria-pressed", "false");
+  const wasPressedInitially = likeButton.getAttribute("aria-pressed") === "true";
   fireEvent.click(likeButton);
-  expect(likeButton).toHaveAttribute("aria-pressed", "true");
+  expect(likeButton).toHaveAttribute("aria-pressed", wasPressedInitially ? "false" : "true");
 });
 
 test("toggles follow state in artwork detail modal", async () => {
@@ -975,6 +975,39 @@ test("opens detail modal from artist profile artwork click", async () => {
 
   expect(await screen.findByRole("dialog", { name: "Detailansicht Kunstwerk" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /Profil von Pluesch/i })).toBeInTheDocument();
+});
+
+test("applies like from artist profile artwork and updates profile likes count", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  const foreignPost = await screen.findByTestId("post-2");
+  fireEvent.click(within(foreignPost).getByRole("img", { name: /Artwork von Pluesch/i }));
+  fireEvent.click(await screen.findByRole("button", { name: /Profil von Pluesch/i }));
+
+  const likesChipBefore = screen.getByText(/\d+\s+Likes/);
+  const likesCountBefore = Number((likesChipBefore.textContent || "").replace(/\D/g, "")) || 0;
+
+  const profileArtwork = await screen.findByRole("img", { name: "Werk 2 von Pluesch" });
+  fireEvent.click(profileArtwork);
+
+  const likeButton = await screen.findByRole("button", { name: "Like visuell umschalten" });
+  fireEvent.click(likeButton);
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: "Like visuell umschalten" })).toHaveAttribute("aria-pressed", "true");
+  });
+  fireEvent.click(screen.getByRole("button", { name: /Profil von Pluesch/i }));
+
+  const likesChipAfter = await screen.findByText(/\d+\s+Likes/);
+  const likesCountAfter = Number((likesChipAfter.textContent || "").replace(/\D/g, "")) || 0;
+  expect(likesCountAfter).toBe(likesCountBefore + 1);
 });
 
 test("closes artwork detail modal via backdrop click and Escape", async () => {

@@ -121,6 +121,19 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || "";
 const MARK_ALL_UNDO_WINDOW_MS = 5000;
 const SESSION_BOOT_TIMEOUT_MS = 5000;
 
+function normalizeLikesMap(input) {
+  if (!input || typeof input !== "object") {
+    return {};
+  }
+  const nextLikes = {};
+  Object.keys(input).forEach((key) => {
+    if (input[key]) {
+      nextLikes[String(key)] = true;
+    }
+  });
+  return nextLikes;
+}
+
 function createApiClient(token) {
   const request = async (path, options = {}) => {
     const headers = {
@@ -167,6 +180,11 @@ function createApiClient(token) {
         body: JSON.stringify(payload),
       }),
     getFeed: () => request("/api/feed"),
+    toggleLike: (postId, liked) =>
+      request(`/api/feed/likes/${postId}`, {
+        method: "PUT",
+        body: JSON.stringify({ liked }),
+      }),
     createPost: (payload) =>
       request("/api/feed/posts", {
         method: "POST",
@@ -212,21 +230,27 @@ class AppErrorBoundary extends React.Component {
   }
 }
 
+function createFallbackLikeCountFromPost(post) {
+  const idPart = Number(post?.id);
+  const userPart = String(post?.user || "")
+    .split("")
+    .reduce((nextSum, char) => nextSum + char.charCodeAt(0), 0);
+  const hash = Math.abs((Number.isFinite(idPart) ? idPart : 0) * 17 + userPart);
+  return 24 + (hash % 180);
+}
+
+function getPostBaseLikeCount(post) {
+  const likeCount = Number(post?.likeCount);
+  if (Number.isFinite(likeCount) && likeCount >= 0) {
+    return likeCount;
+  }
+  return createFallbackLikeCountFromPost(post);
+}
+
 function createOwnProfile(currentUser, posts) {
   const ownPosts = posts.filter((post) => post.ownerId === currentUser.id);
   const ownImages = ownPosts.flatMap((post) => post.images).slice(0, 20);
-  const ownLikes = ownPosts.reduce((sum, post) => {
-    const likeCount = Number(post.likeCount);
-    if (Number.isFinite(likeCount) && likeCount >= 0) {
-      return sum + likeCount;
-    }
-    const idPart = Number(post.id);
-    const userPart = String(post.user || "")
-      .split("")
-      .reduce((nextSum, char) => nextSum + char.charCodeAt(0), 0);
-    const hash = Math.abs((Number.isFinite(idPart) ? idPart : 0) * 17 + userPart);
-    return sum + (24 + (hash % 180));
-  }, 0);
+  const ownLikes = ownPosts.reduce((sum, post) => sum + getPostBaseLikeCount(post), 0);
 
   return {
     id: currentUser.id,
@@ -256,18 +280,7 @@ function createProfileFromPost(post, posts, currentUserId) {
   });
   const profilePosts = matchingPosts.length > 0 ? matchingPosts : [post];
   const images = profilePosts.flatMap((entry) => (Array.isArray(entry.images) ? entry.images : [])).filter(Boolean);
-  const likeCount = profilePosts.reduce((sum, entry) => {
-    const parsedLikeCount = Number(entry.likeCount);
-    if (Number.isFinite(parsedLikeCount) && parsedLikeCount >= 0) {
-      return sum + parsedLikeCount;
-    }
-    const idPart = Number(entry.id);
-    const userPart = String(entry.user || "")
-      .split("")
-      .reduce((nextSum, char) => nextSum + char.charCodeAt(0), 0);
-    const hash = Math.abs((Number.isFinite(idPart) ? idPart : 0) * 17 + userPart);
-    return sum + (24 + (hash % 180));
-  }, 0);
+  const likeCount = profilePosts.reduce((sum, entry) => sum + getPostBaseLikeCount(entry), 0);
   const fallbackAvatar = createAvatarFromName(String(post.user || "Kuenstler"));
 
   return {
@@ -313,6 +326,8 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [likes, setLikes] = useState({});
   const [posts, setPosts] = useState([]);
+  const [initialLikes, setInitialLikes] = useState({});
+  const [likePendingByPostId, setLikePendingByPostId] = useState({});
   const [followByArtistKey, setFollowByArtistKey] = useState({});
   const [notifications, setNotifications] = useState([]);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
@@ -354,13 +369,15 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     try {
       const feedResponse = await apiClient.getFeed();
       setPosts(Array.isArray(feedResponse.posts) ? feedResponse.posts : []);
-      const nextLikes = feedResponse.likes || {};
+      const nextLikes = normalizeLikesMap(feedResponse.likes || {});
       setLikes(nextLikes);
+      setInitialLikes(nextLikes);
       likesRef.current = nextLikes;
     } catch (error) {
       setFeedErrorText(error.message || "Feed konnte nicht geladen werden.");
       setPosts([]);
       setLikes({});
+      setInitialLikes({});
       likesRef.current = {};
     } finally {
       setIsFeedLoading(false);
@@ -402,6 +419,27 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     () => createFollowerCountFromKey(activeProfileArtistKey) + (isFollowingActiveProfileArtist ? 1 : 0),
     [activeProfileArtistKey, isFollowingActiveProfileArtist],
   );
+
+  const getEffectiveLikeCount = useCallback(
+    (post) => {
+      const baseLikeCount = getPostBaseLikeCount(post);
+      const postIdKey = String(post?.id ?? "");
+      if (!postIdKey) {
+        return baseLikeCount;
+      }
+      const isLikedNow = Boolean(likes[postIdKey]);
+      const wasLikedInitially = Boolean(initialLikes[postIdKey]);
+      return Math.max(0, baseLikeCount + (isLikedNow ? 1 : 0) - (wasLikedInitially ? 1 : 0));
+    },
+    [initialLikes, likes],
+  );
+  const activeProfileLikesCount = useMemo(() => {
+    const profileWorks = Array.isArray(activeProfile?.works) ? activeProfile.works : [];
+    if (profileWorks.length === 0) {
+      return getEffectiveLikeCount(activeProfile);
+    }
+    return profileWorks.reduce((sum, work) => sum + getEffectiveLikeCount(work), 0);
+  }, [activeProfile, getEffectiveLikeCount]);
 
   const toggleFollowArtist = useCallback((artistKey) => {
     if (!artistKey) {
@@ -653,6 +691,49 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
     setDetailPost(null);
   }, []);
 
+  const toggleLikeForPost = useCallback(
+    async (post) => {
+      const postIdKey = String(post?.id ?? "");
+      if (!postIdKey) {
+        return;
+      }
+      if (likePendingByPostId[postIdKey]) {
+        return;
+      }
+      const currentlyLiked = Boolean(likesRef.current[postIdKey]);
+      const nextLiked = !currentlyLiked;
+      const previousLikesSnapshot = likesRef.current;
+      const optimisticLikes = { ...previousLikesSnapshot };
+      if (nextLiked) {
+        optimisticLikes[postIdKey] = true;
+      } else {
+        delete optimisticLikes[postIdKey];
+      }
+      likesRef.current = optimisticLikes;
+      setLikes(optimisticLikes);
+      setLikePendingByPostId((previous) => ({ ...previous, [postIdKey]: true }));
+
+      const numericPostId = Number(postIdKey);
+      if (!Number.isFinite(numericPostId)) {
+        setLikePendingByPostId((previous) => ({ ...previous, [postIdKey]: false }));
+        return;
+      }
+
+      try {
+        const response = await apiClient.toggleLike(numericPostId, nextLiked);
+        const serverLikes = normalizeLikesMap(response?.likes || {});
+        likesRef.current = serverLikes;
+        setLikes(serverLikes);
+      } catch (error) {
+        likesRef.current = previousLikesSnapshot;
+        setLikes(previousLikesSnapshot);
+      } finally {
+        setLikePendingByPostId((previous) => ({ ...previous, [postIdKey]: false }));
+      }
+    },
+    [apiClient, likePendingByPostId],
+  );
+
   useEffect(() => {
     if (current !== "feed" || highlightedPostId === null) {
       return undefined;
@@ -761,6 +842,10 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
         onClose={closeArtworkDetail}
         isFollowing={isFollowingDetailArtist}
         onToggleFollow={() => toggleFollowArtist(detailArtistKey)}
+        isLiked={Boolean(detailPost && likes[String(detailPost.id)])}
+        likeCount={detailPost ? getEffectiveLikeCount(detailPost) : 0}
+        isLikePending={Boolean(detailPost && likePendingByPostId[String(detailPost.id)])}
+        onToggleLike={() => toggleLikeForPost(detailPost)}
         onOpenArtistProfile={openProfile}
         followerCount={detailFollowerCount}
       />
@@ -823,7 +908,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
           isFollowed={isFollowingActiveProfileArtist}
           onToggleFollow={() => toggleFollowArtist(activeProfileArtistKey)}
           followerCount={activeProfileFollowerCount}
-          likesCount={Number(activeProfile?.likeCount) || 0}
+          likesCount={activeProfileLikesCount}
           artworksCount={Array.isArray(activeProfile?.images) ? activeProfile.images.length : 0}
           onOpenArtworkDetail={openArtworkDetail}
           styles={styles}

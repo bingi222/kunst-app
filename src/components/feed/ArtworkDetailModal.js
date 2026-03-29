@@ -62,10 +62,12 @@ export default function ArtworkDetailModal({
   isFollowing = false,
   onToggleFollow = () => {},
   onOpenArtistProfile = () => {},
+  isLiked = false,
+  likeCount = null,
+  isLikePending = false,
+  onToggleLike = () => {},
   followerCount = 0,
 }) {
-  const [isLiked, setIsLiked] = useState(false);
-
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
@@ -78,16 +80,12 @@ export default function ArtworkDetailModal({
     };
   }, [onClose]);
 
-  useEffect(() => {
-    setIsLiked(false);
-  }, [post?.id]);
-
   if (!post) {
     return null;
   }
 
   const detailMeta = createDetailMeta(post);
-  const displayedLikes = detailMeta.likeCount + (isLiked ? 1 : 0);
+  const displayedLikes = Number.isFinite(Number(likeCount)) ? Number(likeCount) : detailMeta.likeCount;
 
   return (
     <div
@@ -170,9 +168,10 @@ export default function ArtworkDetailModal({
               </p>
               <button
                 type="button"
-                onClick={() => setIsLiked((previous) => !previous)}
+                onClick={onToggleLike}
                 aria-label="Like visuell umschalten"
                 aria-pressed={isLiked}
+                disabled={isLikePending}
                 style={{
                   border: "1px solid #2a2a2a",
                   borderRadius: "999px",
@@ -180,12 +179,13 @@ export default function ArtworkDetailModal({
                   background: isLiked ? "#222222" : "#1a1a1a",
                   color: isLiked ? "rgba(255, 255, 255, 0.9)" : "#aaaaaa",
                   fontSize: "12px",
-                  cursor: "pointer",
+                  cursor: isLikePending ? "not-allowed" : "pointer",
+                  opacity: isLikePending ? 0.65 : 1,
                   transition: "background-color 180ms ease, color 180ms ease, transform 180ms ease",
                   transform: isLiked ? "scale(1.02)" : "scale(1)",
                 }}
               >
-                {isLiked ? "♥ Geliked" : "♡ Like"}
+                {isLikePending ? "..." : isLiked ? "♥ Geliked" : "♡ Like"}
               </button>
             </div>
             <p style={{ margin: "8px 0 0", fontSize: "13px", lineHeight: 1.45, color: "#aaaaaa" }}>
