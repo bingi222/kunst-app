@@ -373,6 +373,25 @@ test("opens own profile from nav and allows logout from user menu", async () => 
   expect(await screen.findByText("Deine Werke")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Benutzermenue oeffnen" }));
+  const logoutButtons = screen.getAllByRole("button", { name: "Logout" });
+  fireEvent.click(logoutButtons[logoutButtons.length - 1]);
+  expect(await screen.findByRole("heading", { name: "KUNST Login" })).toBeInTheDocument();
+});
+
+test("allows logout directly from profile page", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  fireEvent.click(await screen.findByRole("button", { name: "Mein Profil" }));
+  expect(await screen.findByText("Deine Werke")).toBeInTheDocument();
+
   fireEvent.click(screen.getByRole("button", { name: "Logout" }));
   expect(await screen.findByRole("heading", { name: "KUNST Login" })).toBeInTheDocument();
 });
@@ -407,7 +426,8 @@ test("allows changing profile password", async () => {
 
   expect(await screen.findByText("Passwort wurde aktualisiert.")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Benutzermenue oeffnen" }));
-  fireEvent.click(screen.getByRole("button", { name: "Logout" }));
+  const menuLogoutButtons = screen.getAllByRole("button", { name: "Logout" });
+  fireEvent.click(menuLogoutButtons[0]);
 
   fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
     target: { value: "bingi" },
@@ -763,7 +783,8 @@ test("persists feed filters and allows reset", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Nur Likes" }));
 
   fireEvent.click(screen.getByRole("button", { name: "Benutzermenue oeffnen" }));
-  fireEvent.click(screen.getByRole("button", { name: "Logout" }));
+  const persistedFiltersLogoutButtons = screen.getAllByRole("button", { name: "Logout" });
+  fireEvent.click(persistedFiltersLogoutButtons[0]);
   fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
     target: { value: "bingi" },
   });

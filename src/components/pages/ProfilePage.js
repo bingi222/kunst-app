@@ -15,6 +15,7 @@ const fieldStyle = {
 export default function ProfilePage({
   data,
   onBack,
+  onLogout = () => {},
   isOwnProfile,
   onSaveProfile,
   onChangePassword,
@@ -107,9 +108,12 @@ export default function ProfilePage({
 
   return (
     <section style={{ maxWidth: 1080, margin: "0 auto", padding: "20px 16px 28px" }}>
-      <div style={{ marginBottom: "12px" }}>
+      <div style={{ marginBottom: "12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
         <button type="button" onClick={onBack} style={styles.secondaryBtn}>
           ← Zurueck
+        </button>
+        <button type="button" onClick={onLogout} style={styles.secondaryBtn}>
+          Logout
         </button>
       </div>
 

@@ -915,6 +915,7 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
             return "";
           }}
           onChangePassword={onChangePassword}
+          onLogout={onLogout}
           onBack={() => {
             setCurrent("feed");
             setSelectedProfile(null);
