@@ -747,6 +747,31 @@ test("persists upload draft image url", async () => {
   expect(screen.getByDisplayValue("https://picsum.photos/seed/draft-url/900/600")).toBeInTheDocument();
 });
 
+test("shows uploaded image immediately in feed after posting", async () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByPlaceholderText("z. B. bingi"), {
+    target: { value: "bingi" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("Dein Passwort"), {
+    target: { value: "kunst123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anmelden" }));
+
+  await screen.findByRole("button", { name: "Home" });
+  fireEvent.click(screen.getByRole("button", { name: "Upload" }));
+
+  fireEvent.change(screen.getByPlaceholderText("Bild-URL einfuegen"), {
+    target: { value: "https://picsum.photos/seed/new-upload-1/900/600" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Posten" }));
+
+  expect(await screen.findByRole("button", { name: "Home" })).toBeInTheDocument();
+  await waitFor(() => {
+    expect(document.querySelector('img[src="https://picsum.photos/seed/new-upload-1/900/600"]')).not.toBeNull();
+  });
+});
+
 test("does not render delete controls in feed cards", async () => {
   render(<App />);
 

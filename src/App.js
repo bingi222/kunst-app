@@ -713,17 +713,22 @@ function AppContent({ currentUser, onLogout, onUpdateProfile, onChangePassword, 
           draftImageUrl={uploadDraftImageUrl}
           onDraftImageUrlChange={setUploadDraftImageUrl}
           onBack={() => setCurrent("feed")}
-          onPost={async (newPost) => {
-            try {
-              const response = await apiClient.createPost({
-                imageUrl: newPost.images?.[0] || "",
-              });
-              setPosts((previous) => [response.post, ...previous]);
-              await loadFeed();
-            } catch (error) {
-              setFeedErrorText(error.message || "Post konnte nicht erstellt werden.");
-              throw error;
-            }
+          onPost={(newPost) => {
+            const localPostId = Number(newPost?.id) || Date.now();
+            const localPost = {
+              ...newPost,
+              id: localPostId,
+              ownerId: newPost?.ownerId || currentUser.id,
+              user: newPost?.user || currentUser.displayName,
+              bio: newPost?.bio || currentUser.bio,
+              avatar: newPost?.avatar || currentUser.avatar,
+              images: Array.isArray(newPost?.images) ? newPost.images : [],
+              createdAt: Date.now(),
+              commentCount: 0,
+            };
+            setFeedErrorText("");
+            setPosts((previousPosts) => [localPost, ...previousPosts.filter((post) => Number(post.id) !== Number(localPostId))]);
+            setCurrent("feed");
           }}
         />
       )}
